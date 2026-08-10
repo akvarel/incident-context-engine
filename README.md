@@ -48,3 +48,8 @@ payload = snapshot.to_dict()
 The engine stores no credentials and performs no remote access in this slice. Sensitive message
 values and sensitive structured fields are redacted before snapshot serialization. Raw evidence
 must remain in its original observability backend and is represented only by validated references.
+
+## License
+
+Dual-licensed under the MIT License or Apache License 2.0, at your option. See
+`LICENSE-MIT`, `LICENSE-APACHE`, and `NOTICE`. The root `LICENSE` retains the original MIT grant.
