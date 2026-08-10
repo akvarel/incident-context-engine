@@ -53,6 +53,43 @@ def test_graphify_linkage_selects_durable_incident_related_code_nodes():
     assert all(link.revision for link in links)
 
 
+def test_graphify_linkage_handles_stack_fingerprints_without_runtime_failure():
+    evidence = {
+        "source": "loki",
+        "query_ref": "LQ-GRAPH-STACK",
+        "start": "2026-08-10T12:00:00Z",
+        "end": "2026-08-10T12:01:00Z",
+    }
+    context = IncidentContextBuilder().build(
+        BuildRequest(
+            scope="payment-service",
+            token_budget=900,
+            events=[
+                LogEvent(
+                    timestamp=datetime(2026, 8, 10, 12, 0, tzinfo=timezone.utc),
+                    service="payment-service",
+                    severity="ERROR",
+                    message=(
+                        "java.lang.RuntimeException: processing failed\n"
+                        "at com.example.api.InvoiceService.create(InvoiceService.java:74)\n"
+                        "at com.example.api.PaymentController.run(PaymentController.java:21)"
+                    ),
+                    fields={},
+                    evidence=evidence,
+                )
+            ],
+        )
+    )
+
+    assert len(context.stack_fingerprints) == 1
+    links = link_graphify_code(
+        context,
+        "NODE InvoiceService.create [source=src/invoice.py location=InvoiceService.create community=payments]",
+    )
+
+    assert [link.name for link in links] == ["InvoiceService.create"]
+
+
 def test_combined_incident_and_graphify_package_is_bounded_and_revision_addressed():
     output = "\n".join(
         f"NODE PaymentService.symbol{index} [source=src/payment_{index}.py location=PaymentService.symbol{index} community=payments]"

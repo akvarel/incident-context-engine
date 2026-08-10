@@ -52,7 +52,7 @@ def _incident_terms(context: IncidentContext) -> set[str]:
     for pattern in context.patterns:
         values.extend((pattern.template, *pattern.services))
     for stack in context.stack_fingerprints:
-        values.extend((stack.exception_type, stack.root_cause or "", *stack.frames))
+        values.extend((stack.exception_type, *stack.services, *stack.frames))
     return {token.casefold() for value in values for token in _TOKEN_RE.findall(value)}
 
 
