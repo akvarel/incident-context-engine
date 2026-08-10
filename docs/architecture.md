@@ -31,5 +31,11 @@ same package without moving domain rules into HTTP handlers.
 1. Deterministic log vertical slice. Implemented.
 2. Bounded Loki and Prometheus adapters with baseline and delta analysis. Implemented.
 3. Timeline, stack fingerprints, deployment markers, and correlation confidence. Implemented.
-4. Jcode Context Compiler and progressive L0/L1/L2 expansion tools.
-5. Self-hosted API/MCP service with tenant isolation, RBAC, audit, and rate limits.
+4. Jcode-compatible Context Compiler, progressive L0/L1/L2 expansion tools, and durable Graphify
+   code references. Implemented.
+5. Self-hosted API/MCP reference service with tenant isolation, RBAC, audit, payload bounds, and
+   rate limits. Implemented.
+
+The reference service intentionally uses in-memory auth, audit, rate-limit, and context stores.
+Production persistence, distributed quotas, Vault-backed credentials, TLS termination, and
+deployment manifests remain hosting concerns rather than deterministic-core behavior.

@@ -40,7 +40,10 @@ def _to_iso_utc(value: datetime) -> str:
 def _parse_iso_timestamp(value: str) -> datetime:
     if not isinstance(value, str):
         raise ValueError("timestamp must be an ISO-8601 string")
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp must include a UTC offset or Z suffix")
+    return parsed
 
 
 class AuthBackend(Protocol):
@@ -540,7 +543,7 @@ class IncidentContextService:
                 "protocolVersion": "2024-11-05",
                 "serverInfo": {
                     "name": "incident-context-engine",
-                    "version": "0.3.0",
+                    "version": "0.5.0",
                 },
                 "capabilities": {
                     "tools": {

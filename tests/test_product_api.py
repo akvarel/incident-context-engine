@@ -267,6 +267,22 @@ def test_bounded_payload_is_enforced(service_server):
     assert body["error"]["code"] == "payload_too_large"
 
 
+def test_timezone_naive_event_timestamp_is_rejected_deterministically():
+    with _run_service_server(requests_per_minute=10) as server:
+        payload = _incident_payload()
+        payload["events"][0]["timestamp"] = "2026-08-10T12:00:00"
+        status, body = _request(
+            f"http://127.0.0.1:{server.server_port}/v1/contexts",
+            method="POST",
+            payload=payload,
+            api_key="tenant-a-key",
+        )
+
+    assert status == 400
+    assert body["error"]["code"] == "bad_event_timestamp"
+    assert "offset-aware" in body["error"]["message"]
+
+
 def test_mcp_surface_supports_initialize_tools_and_call(service_server):
     with _run_service_server(requests_per_minute=10) as mcp_server:
         status, initialize = _request(
