@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlparse
 
@@ -11,6 +10,7 @@ from incident_context.adapters import (
     PrometheusAdapter,
     PrometheusQuery,
 )
+from incident_context.pipeline import IncidentContextPipeline
 
 
 class RecordingTransport:
@@ -174,3 +174,39 @@ def test_error_payload_does_not_expose_response_body():
         )
 
     assert "secret" not in str(error.value)
+
+
+def test_loki_pipeline_propagates_source_completeness_and_query_accounting():
+    payload = {
+        "status": "success",
+        "data": {
+            "result": [
+                {
+                    "stream": {"namespace": "avion", "app": "avion-search"},
+                    "values": [
+                        ["1786363200000000000", "ERROR first failure"],
+                        ["1786363201000000000", "ERROR second failure"],
+                    ],
+                }
+            ]
+        },
+    }
+    start, end = _window()
+    pipeline = IncidentContextPipeline(
+        loki=LokiAdapter("http://localhost:3100", transport=RecordingTransport(payload))
+    )
+
+    snapshot = pipeline.build_from_loki(
+        scope="avion",
+        token_budget=500,
+        incident_query=LokiQuery(namespace="avion", start=start, end=end, limit=2),
+    )
+    source = snapshot.sources[0]
+
+    assert snapshot.incomplete is True
+    assert source.source == "loki"
+    assert source.complete is False
+    assert source.incomplete_reason == "limit_reached"
+    assert source.query_count == 1
+    assert source.scanned_items == 2
+    assert snapshot.to_dict()["sourceQueries"] == 1
