@@ -43,6 +43,62 @@ incident-context build \
 Each input line must contain `timestamp`, `service`, `message`, and a valid `evidence` object.
 Evidence contains `source`, `query_ref`, `start`, and `end`. `severity` and `fields` are optional.
 
+### Evaluation command
+
+```bash
+incident-context evaluate \
+  --input examples/payment-incident.jsonl \
+  --baseline-input tests/fixtures/evaluation/baseline.jsonl \
+  --scope payments \
+  --budget 500 \
+  --label incident-daylight-review
+```
+
+This command prints machine report JSON by default and a short human summary below.
+Use `--json-only` for machine output only.
+
+The report contains:
+
+- `rawContext`: raw line count, raw byte estimate, raw escalation count;
+- `compactContext`: retained/discovered/omitted patterns, required tokens, and compact byte estimate;
+- `retention`: discovered/retained breakdown for rare, new, and root-cause patterns;
+- `queryTelemetry`: total query count and per-source counts when source observations are present;
+- `comparison`: raw-to-compact token and byte ratios, and token savings;
+- `baselineContext`: optional raw baseline metrics and size when `--baseline-input` is provided.
+
+The output contains only measured telemetry values and does not claim outcome quality.
+
+## Self-hosted product API (milestone 5)
+
+The project also provides a small local HTTP service and an MCP-compatible tool surface.
+
+- `GET /health` — public health check
+- `POST /v1/contexts` — build and persist an incident context
+- `GET /v1/contexts/{id}` — retrieve a stored context for the caller tenant
+- `GET /v1/admin/audit` — tenant-scoped audit trail (`incident_context:audit` role)
+- `POST /mcp` — `initialize`, `tools/list`, `tools/call` methods
+
+Tenant isolation is enforced from the API key principal on every stateful path.
+Rate limits, role checks, audit recording, and bounded payload checks are implemented
+through reference in-memory components.
+
+```python
+from incident_context import (
+    InMemoryApiKeyBackend,
+    IncidentContextService,
+    build_http_server,
+)
+
+backend = InMemoryApiKeyBackend()
+backend.register(
+    "tenant-key",
+    tenant_id="tenant-a",
+    roles={"incident_context:read", "incident_context:write", "incident_context:audit"},
+)
+service = IncidentContextService(auth_backend=backend)
+http_server = build_http_server(service)
+```
+
 ## Library
 
 ```python

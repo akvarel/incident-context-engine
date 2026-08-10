@@ -6,7 +6,28 @@ from .adapters import (
     PrometheusQuery,
 )
 from .builder import IncidentContextBuilder
+from .context_compiler import (
+    DisclosedIncidentContext,
+    ExpansionDirective,
+    InvestigationHypothesis,
+    InvestigationOperation,
+    InvestigationState,
+    JcodeContextCompiler,
+)
 from .pipeline import IncidentContextPipeline
+from .graphify_linkage import (
+    DurableCodeReference,
+    compile_incident_with_graphify,
+    link_graphify_code,
+)
+from .evaluation import (
+    ContextTelemetry,
+    IncidentEvaluationReport,
+    QueryTelemetry,
+    RetentionTelemetry,
+    evaluate_incident_request,
+    infer_window_seconds,
+)
 from .models import (
     BuildRequest,
     CorrelationGroup,
@@ -20,6 +41,17 @@ from .models import (
     SourceObservation,
     StackFingerprint,
     TimelineEntry,
+    CompressionStats,
+)
+from .service import (
+    ApiPrincipal,
+    InMemoryApiKeyBackend,
+    InMemoryAuditLog,
+    InMemoryContextStore,
+    InMemoryRateLimiter,
+    IncidentContextRequestHandler,
+    IncidentContextService,
+    build_http_server,
 )
 
 __all__ = [
@@ -31,7 +63,16 @@ __all__ = [
     "EvidenceRef",
     "IncidentContext",
     "IncidentContextBuilder",
+    "DisclosedIncidentContext",
+    "ExpansionDirective",
+    "InvestigationHypothesis",
+    "InvestigationOperation",
+    "InvestigationState",
+    "JcodeContextCompiler",
     "IncidentContextPipeline",
+    "DurableCodeReference",
+    "compile_incident_with_graphify",
+    "link_graphify_code",
     "IncidentPattern",
     "LogEvent",
     "LokiAdapter",
@@ -40,6 +81,21 @@ __all__ = [
     "PrometheusAdapter",
     "PrometheusQuery",
     "SourceObservation",
+    "CompressionStats",
     "StackFingerprint",
     "TimelineEntry",
+    "ApiPrincipal",
+    "InMemoryApiKeyBackend",
+    "InMemoryAuditLog",
+    "InMemoryContextStore",
+    "InMemoryRateLimiter",
+    "IncidentContextRequestHandler",
+    "IncidentContextService",
+    "build_http_server",
+    "ContextTelemetry",
+    "IncidentEvaluationReport",
+    "QueryTelemetry",
+    "RetentionTelemetry",
+    "evaluate_incident_request",
+    "infer_window_seconds",
 ]
