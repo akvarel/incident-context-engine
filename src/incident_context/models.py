@@ -47,12 +47,21 @@ class BuildRequest:
     scope: str
     token_budget: int
     events: list[LogEvent]
+    baseline_events: list[LogEvent] | None = None
+    incident_window_seconds: int | None = None
+    baseline_window_seconds: int | None = None
+    source_observations: tuple["SourceObservation", ...] = ()
 
     def validate(self) -> None:
         if not self.scope.strip():
             raise ValueError("scope is required")
         if self.token_budget < 64:
             raise ValueError("token_budget must be at least 64")
+        if self.baseline_events is not None:
+            if not self.incident_window_seconds or self.incident_window_seconds < 1:
+                raise ValueError("incident_window_seconds must be positive with a baseline")
+            if not self.baseline_window_seconds or self.baseline_window_seconds < 1:
+                raise ValueError("baseline_window_seconds must be positive with a baseline")
 
 
 @dataclass(frozen=True)
@@ -108,6 +117,56 @@ class CompressionStats:
 
 
 @dataclass(frozen=True)
+class PatternDelta:
+    fingerprint: str
+    template: str
+    severity: str
+    incident_count: int
+    baseline_count: int
+    incident_rate_per_minute: float
+    baseline_rate_per_minute: float
+    absolute_rate_delta: float
+    relative_change: float | None
+    state: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fingerprint": self.fingerprint,
+            "template": self.template,
+            "severity": self.severity,
+            "incidentCount": self.incident_count,
+            "baselineCount": self.baseline_count,
+            "incidentRatePerMinute": self.incident_rate_per_minute,
+            "baselineRatePerMinute": self.baseline_rate_per_minute,
+            "absoluteRateDelta": self.absolute_rate_delta,
+            "relativeChange": self.relative_change,
+            "state": self.state,
+        }
+
+
+@dataclass(frozen=True)
+class SourceObservation:
+    source: str
+    query_ref: str
+    complete: bool
+    incomplete_reason: str | None
+    query_count: int
+    scanned_items: int
+    retained_items: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source": self.source,
+            "queryRef": self.query_ref,
+            "complete": self.complete,
+            "incompleteReason": self.incomplete_reason,
+            "queryCount": self.query_count,
+            "scannedItems": self.scanned_items,
+            "retainedItems": self.retained_items,
+        }
+
+
+@dataclass(frozen=True)
 class IncidentContext:
     schema_version: str
     scope: str
@@ -119,6 +178,8 @@ class IncidentContext:
     token_budget: int
     required_tokens: int
     budget_exceeded: bool
+    deltas: tuple[PatternDelta, ...]
+    sources: tuple[SourceObservation, ...]
     compression: CompressionStats
 
     def to_dict(self) -> dict[str, Any]:
@@ -132,6 +193,9 @@ class IncidentContext:
             "tokenBudget": self.token_budget,
             "requiredTokens": self.required_tokens,
             "budgetExceeded": self.budget_exceeded,
+            "deltas": [delta.to_dict() for delta in self.deltas],
+            "sources": [source.to_dict() for source in self.sources],
+            "sourceQueries": sum(source.query_count for source in self.sources),
             "patterns": [pattern.to_dict() for pattern in self.patterns],
             "compression": self.compression.to_dict(),
         }
