@@ -28,8 +28,8 @@ same package without moving domain rules into HTTP handlers.
 
 ## Delivery milestones
 
-1. Deterministic log vertical slice, current milestone.
-2. Bounded Loki and Prometheus adapters with baseline and delta analysis.
-3. Timeline, stack fingerprints, deployment markers, and correlation confidence.
+1. Deterministic log vertical slice. Implemented.
+2. Bounded Loki and Prometheus adapters with baseline and delta analysis. Implemented.
+3. Timeline, stack fingerprints, deployment markers, and correlation confidence. Implemented.
 4. Jcode Context Compiler and progressive L0/L1/L2 expansion tools.
 5. Self-hosted API/MCP service with tenant isolation, RBAC, audit, and rate limits.

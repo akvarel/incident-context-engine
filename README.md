@@ -19,8 +19,17 @@ The first usable slice accepts JSON Lines log events and produces `incident-cont
 Protected severe patterns are never silently discarded. If they cannot fit in the requested
 budget, the snapshot reports `budgetExceeded: true` and the actual `requiredTokens`.
 
-It does not query or mutate Loki. Source adapters, metric baselines, timelines, Graphify code
-linkage, MCP, and the network service are subsequent milestones.
+The deterministic core does not mutate Loki or Prometheus. Optional adapters perform bounded,
+read-only queries. Timelines, Graphify code linkage, MCP, and the network service remain subsequent
+milestones.
+
+The library now also provides bounded read-only `LokiAdapter` and `PrometheusAdapter` clients,
+plus `IncidentContextPipeline.build_from_loki()` for carrying source completeness and query
+accounting into the snapshot. See `docs/observability-adapters.md`.
+
+Incident snapshots additionally include chronological timelines, normalized exception-stack
+fingerprints, pseudonymous cross-service correlation groups with confidence and coverage, and
+evidence-backed deployment/configuration markers. See `docs/incident-correlation.md`.
 
 ## CLI
 
