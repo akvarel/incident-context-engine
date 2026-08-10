@@ -60,6 +60,9 @@ class IncidentContextBuilder:
             patterns=tuple(retained),
             incomplete=omitted > 0,
             omitted_pattern_count=omitted,
+            token_budget=request.token_budget,
+            required_tokens=output_tokens,
+            budget_exceeded=output_tokens > request.token_budget,
             compression=CompressionStats(
                 raw_events=len(request.events),
                 discovered_patterns=len(patterns),

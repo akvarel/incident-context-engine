@@ -116,6 +116,9 @@ class IncidentContext:
     patterns: tuple[IncidentPattern, ...]
     incomplete: bool
     omitted_pattern_count: int
+    token_budget: int
+    required_tokens: int
+    budget_exceeded: bool
     compression: CompressionStats
 
     def to_dict(self) -> dict[str, Any]:
@@ -126,6 +129,9 @@ class IncidentContext:
             "rawEventCount": self.raw_event_count,
             "incomplete": self.incomplete,
             "omittedPatternCount": self.omitted_pattern_count,
+            "tokenBudget": self.token_budget,
+            "requiredTokens": self.required_tokens,
+            "budgetExceeded": self.budget_exceeded,
             "patterns": [pattern.to_dict() for pattern in self.patterns],
             "compression": self.compression.to_dict(),
         }
