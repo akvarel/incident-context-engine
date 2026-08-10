@@ -1,0 +1,3 @@
+{"timestamp":"2026-08-10T12:00:00Z","service":"payments","severity":"INFO","message":"health check ok","evidence":{"source":"loki","query_ref":"LQ-DEMO","start":"2026-08-10T12:00:00Z","end":"2026-08-10T12:01:00Z"}}
+{"timestamp":"2026-08-10T12:00:10Z","service":"payments","severity":"ERROR","message":"Payment timeout order=19382 duration=5000ms","fields":{"provider":"Stripe"},"evidence":{"source":"loki","query_ref":"LQ-DEMO","start":"2026-08-10T12:00:00Z","end":"2026-08-10T12:01:00Z"}}
+{"timestamp":"2026-08-10T12:00:11Z","service":"payments","severity":"ERROR","message":"Payment timeout order=19383 duration=5000ms","fields":{"provider":"Stripe"},"evidence":{"source":"loki","query_ref":"LQ-DEMO","start":"2026-08-10T12:00:00Z","end":"2026-08-10T12:01:00Z"}}
