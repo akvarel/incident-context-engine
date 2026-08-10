@@ -9,17 +9,25 @@ from .builder import IncidentContextBuilder
 from .pipeline import IncidentContextPipeline
 from .models import (
     BuildRequest,
+    CorrelationGroup,
+    CorrelationSummary,
+    DeploymentMarker,
     EvidenceRef,
     IncidentContext,
     IncidentPattern,
     LogEvent,
     PatternDelta,
     SourceObservation,
+    StackFingerprint,
+    TimelineEntry,
 )
 
 __all__ = [
     "AdapterLimits",
     "BuildRequest",
+    "CorrelationGroup",
+    "CorrelationSummary",
+    "DeploymentMarker",
     "EvidenceRef",
     "IncidentContext",
     "IncidentContextBuilder",
@@ -32,4 +40,6 @@ __all__ = [
     "PrometheusAdapter",
     "PrometheusQuery",
     "SourceObservation",
+    "StackFingerprint",
+    "TimelineEntry",
 ]

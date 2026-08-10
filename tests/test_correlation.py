@@ -50,6 +50,7 @@ def test_timeline_orders_deployment_before_first_error_pattern():
     assert [item.kind for item in snapshot.timeline] == ["deployment", "log_pattern"]
     assert snapshot.timeline[0].version == "git-abc123"
     assert snapshot.timeline[0].evidence[0].query_ref == "K8S-DEPLOY-1"
+    assert snapshot.timeline[1].correlation_refs == ()
 
 
 def test_java_stack_line_changes_collapse_to_one_exception_fingerprint():

@@ -43,6 +43,17 @@ class LogEvent:
 
 
 @dataclass
+class DeploymentMarker:
+    timestamp: datetime
+    service: str
+    kind: str
+    version: str
+    summary: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class BuildRequest:
     scope: str
     token_budget: int
@@ -51,6 +62,7 @@ class BuildRequest:
     incident_window_seconds: int | None = None
     baseline_window_seconds: int | None = None
     source_observations: tuple["SourceObservation", ...] = ()
+    deployment_markers: tuple[DeploymentMarker, ...] = ()
 
     def validate(self) -> None:
         if not self.scope.strip():
@@ -76,6 +88,7 @@ class IncidentPattern:
     samples: tuple[dict[str, Any], ...]
     evidence: tuple[EvidenceRef, ...]
     retention_reason: str
+    exception_fingerprint: str | None = None
 
     def estimated_tokens(self) -> int:
         sample_chars = sum(len(str(sample)) for sample in self.samples)
@@ -93,6 +106,7 @@ class IncidentPattern:
             "samples": list(self.samples),
             "evidence": [item.to_dict() for item in self.evidence],
             "retentionReason": self.retention_reason,
+            "exceptionFingerprint": self.exception_fingerprint,
         }
 
 
@@ -167,6 +181,96 @@ class SourceObservation:
 
 
 @dataclass(frozen=True)
+class StackFingerprint:
+    fingerprint: str
+    exception_type: str
+    frames: tuple[str, ...]
+    count: int
+    services: tuple[str, ...]
+    first_seen: str
+    last_seen: str
+    evidence: tuple[EvidenceRef, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fingerprint": self.fingerprint,
+            "exceptionType": self.exception_type,
+            "frames": list(self.frames),
+            "count": self.count,
+            "services": list(self.services),
+            "firstSeen": self.first_seen,
+            "lastSeen": self.last_seen,
+            "evidence": [item.to_dict() for item in self.evidence],
+        }
+
+
+@dataclass(frozen=True)
+class CorrelationGroup:
+    correlation_ref: str
+    id_type: str
+    event_count: int
+    services: tuple[str, ...]
+    first_seen: str
+    last_seen: str
+    confidence: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "correlationRef": self.correlation_ref,
+            "idType": self.id_type,
+            "eventCount": self.event_count,
+            "services": list(self.services),
+            "firstSeen": self.first_seen,
+            "lastSeen": self.last_seen,
+            "confidence": self.confidence,
+        }
+
+
+@dataclass(frozen=True)
+class CorrelationSummary:
+    total_events: int
+    correlated_events: int
+    coverage: float
+    confidence: float
+    level: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "totalEvents": self.total_events,
+            "correlatedEvents": self.correlated_events,
+            "coverage": self.coverage,
+            "confidence": self.confidence,
+            "level": self.level,
+        }
+
+
+@dataclass(frozen=True)
+class TimelineEntry:
+    timestamp: str
+    kind: str
+    service: str
+    summary: str
+    fingerprint: str | None
+    version: str | None
+    metadata: dict[str, Any]
+    correlation_refs: tuple[str, ...]
+    evidence: tuple[EvidenceRef, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "timestamp": self.timestamp,
+            "kind": self.kind,
+            "service": self.service,
+            "summary": self.summary,
+            "fingerprint": self.fingerprint,
+            "version": self.version,
+            "metadata": self.metadata,
+            "correlationRefs": list(self.correlation_refs),
+            "evidence": [item.to_dict() for item in self.evidence],
+        }
+
+
+@dataclass(frozen=True)
 class IncidentContext:
     schema_version: str
     scope: str
@@ -180,6 +284,10 @@ class IncidentContext:
     budget_exceeded: bool
     deltas: tuple[PatternDelta, ...]
     sources: tuple[SourceObservation, ...]
+    timeline: tuple[TimelineEntry, ...]
+    stack_fingerprints: tuple[StackFingerprint, ...]
+    correlations: tuple[CorrelationGroup, ...]
+    correlation_summary: CorrelationSummary
     compression: CompressionStats
 
     def to_dict(self) -> dict[str, Any]:
@@ -196,6 +304,10 @@ class IncidentContext:
             "deltas": [delta.to_dict() for delta in self.deltas],
             "sources": [source.to_dict() for source in self.sources],
             "sourceQueries": sum(source.query_count for source in self.sources),
+            "timeline": [item.to_dict() for item in self.timeline],
+            "stackFingerprints": [item.to_dict() for item in self.stack_fingerprints],
+            "correlations": [item.to_dict() for item in self.correlations],
+            "correlationSummary": self.correlation_summary.to_dict(),
             "patterns": [pattern.to_dict() for pattern in self.patterns],
             "compression": self.compression.to_dict(),
         }

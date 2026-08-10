@@ -4,16 +4,48 @@ import re
 from typing import Any
 
 _SENSITIVE_KEYS = {
-    "authorization", "cookie", "password", "secret", "token", "access_token",
-    "refresh_token", "api_key", "user_id", "email",
+    "authorization",
+    "cookie",
+    "password",
+    "secret",
+    "token",
+    "access_token",
+    "refresh_token",
+    "api_key",
+    "user_id",
+    "email",
+    "trace_id",
+    "span_id",
+    "request_id",
+    "correlation_id",
+    "session_id",
 }
 
 _PATTERNS = (
-    (re.compile(r"(?i)\b(?:authorization|token|secret|password|api[_-]?key)=\S+"), "<redacted>"),
+    (
+        re.compile(r"(?i)\b(?:authorization|token|secret|password|api[_-]?key)=\S+"),
+        "<redacted>",
+    ),
+    (
+        re.compile(r"(?i)\b(?:trace_id|span_id|request_id|correlation_id|session_id)=\S+"),
+        "<correlation>",
+    ),
     (re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b"), "<redacted>"),
-    (re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b"), "<uuid>"),
-    (re.compile(r"(?i)\b(?:duration|timeout|latency)=\d+(?:\.\d+)?(?:ms|s|m)?\b"), lambda match: match.group(0).split("=", 1)[0] + "=<duration>"),
-    (re.compile(r"(?i)\b(?:order|request_id|session_id|user_id|shard|id)=\d+\b"), lambda match: match.group(0).split("=", 1)[0] + "=<id>"),
+    (
+        re.compile(
+            r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-"
+            r"[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b"
+        ),
+        "<uuid>",
+    ),
+    (
+        re.compile(r"(?i)\b(?:duration|timeout|latency)=\d+(?:\.\d+)?(?:ms|s|m)?\b"),
+        lambda match: match.group(0).split("=", 1)[0] + "=<duration>",
+    ),
+    (
+        re.compile(r"(?i)\b(?:order|request_id|session_id|user_id|shard|id)=\d+\b"),
+        lambda match: match.group(0).split("=", 1)[0] + "=<id>",
+    ),
     (re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"), "<ip>"),
 )
 

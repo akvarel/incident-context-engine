@@ -1,22 +1,44 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from .correlation import (
+    StackSignature,
+    correlation_ref,
+    correlation_values,
+    event_template,
+    stack_signature,
+)
 from .models import (
     BuildRequest,
     CompressionStats,
+    CorrelationGroup,
+    CorrelationSummary,
     EvidenceRef,
     IncidentContext,
     IncidentPattern,
     LogEvent,
     PatternDelta,
+    StackFingerprint,
+    TimelineEntry,
 )
 from .normalization import normalize_message, sanitize_fields
 
 _PROTECTED_SEVERITIES = {"FATAL", "CRITICAL", "ERROR"}
-_SEVERITY_ORDER = {"FATAL": 5, "CRITICAL": 4, "ERROR": 3, "WARN": 2, "WARNING": 2, "INFO": 1, "DEBUG": 0}
+_SEVERITY_ORDER = {
+    "FATAL": 5,
+    "CRITICAL": 4,
+    "ERROR": 3,
+    "WARN": 2,
+    "WARNING": 2,
+    "INFO": 1,
+    "DEBUG": 0,
+}
+_MARKER_KINDS = {"deployment", "config", "restart", "feature_flag"}
+_VERSION = re.compile(r"^[A-Za-z0-9._:@/+\-]{1,128}$")
 
 
 @dataclass
@@ -34,7 +56,7 @@ class IncidentContextBuilder:
         for event in request.events:
             evidence = EvidenceRef.from_mapping(event.evidence)
             severity = event.severity.upper().strip() or "INFO"
-            template = normalize_message(event.message)
+            template = event_template(event.message)
             key = (template, severity)
             if key not in buckets:
                 buckets[key] = _Bucket(template, severity, [], {})
@@ -46,12 +68,22 @@ class IncidentContextBuilder:
         patterns.sort(key=self._rank_key)
         retained, omitted = self._apply_budget(patterns, request.token_budget)
         deltas = self._deltas(request, patterns)
+        stack_fingerprints = self._stack_fingerprints(request.events)
+        correlations, correlation_summary = self._correlations(request.events)
+        timeline = self._timeline(request, retained, correlations)
         output_tokens = (
-            36 + sum(pattern.estimated_tokens() for pattern in retained) + 20 * len(deltas)
+            36
+            + sum(pattern.estimated_tokens() for pattern in retained)
+            + 20 * len(deltas)
+            + 18 * len(timeline)
+            + 24 * len(stack_fingerprints)
+            + 16 * len(correlations)
         )
         input_tokens = sum(max(1, len(event.message) // 4) + 12 for event in request.events)
+        observed_timestamps = [event.timestamp for event in request.events]
+        observed_timestamps.extend(marker.timestamp for marker in request.deployment_markers)
         generated_at = (
-            max((event.timestamp for event in request.events), default=datetime.now(timezone.utc))
+            max(observed_timestamps, default=datetime.now(timezone.utc))
             .astimezone(timezone.utc)
             .isoformat()
             .replace("+00:00", "Z")
@@ -70,6 +102,10 @@ class IncidentContextBuilder:
             budget_exceeded=output_tokens > request.token_budget,
             deltas=tuple(deltas),
             sources=request.source_observations,
+            timeline=tuple(timeline),
+            stack_fingerprints=tuple(stack_fingerprints),
+            correlations=tuple(correlations),
+            correlation_summary=correlation_summary,
             compression=CompressionStats(
                 raw_events=len(request.events),
                 discovered_patterns=len(patterns),
@@ -88,7 +124,7 @@ class IncidentContextBuilder:
         for event in request.baseline_events:
             EvidenceRef.from_mapping(event.evidence)
             severity = event.severity.upper().strip() or "INFO"
-            template = normalize_message(event.message)
+            template = event_template(event.message)
             key = (template, severity)
             if key not in baseline_buckets:
                 baseline_buckets[key] = _Bucket(template, severity, [], {})
@@ -140,10 +176,158 @@ class IncidentContextBuilder:
             )
         return values
 
+    def _stack_fingerprints(self, events: list[LogEvent]) -> list[StackFingerprint]:
+        grouped: dict[str, list[tuple[LogEvent, StackSignature]]] = {}
+        for event in events:
+            signature = stack_signature(event.message)
+            if signature:
+                grouped.setdefault(signature.fingerprint, []).append((event, signature))
+        values: list[StackFingerprint] = []
+        for fingerprint, items in grouped.items():
+            ordered = sorted(items, key=lambda item: item[0].timestamp)
+            signature = ordered[0][1]
+            evidence: dict[tuple[str, str, str, str], EvidenceRef] = {}
+            for event, _ in ordered:
+                item = EvidenceRef.from_mapping(event.evidence)
+                evidence[(item.source, item.query_ref, item.start, item.end)] = item
+            values.append(
+                StackFingerprint(
+                    fingerprint=fingerprint,
+                    exception_type=signature.exception_type,
+                    frames=signature.frames,
+                    count=len(ordered),
+                    services=tuple(sorted({event.service for event, _ in ordered})),
+                    first_seen=self._timestamp(ordered[0][0]),
+                    last_seen=self._timestamp(ordered[-1][0]),
+                    evidence=tuple(evidence.values()),
+                )
+            )
+        return sorted(values, key=lambda item: (-item.count, item.fingerprint))
+
+    def _correlations(
+        self, events: list[LogEvent]
+    ) -> tuple[list[CorrelationGroup], CorrelationSummary]:
+        grouped: dict[tuple[str, str], list[tuple[int, LogEvent]]] = {}
+        for index, event in enumerate(events):
+            for id_type, value in correlation_values(event.fields, event.message).items():
+                grouped.setdefault((id_type, value), []).append((index, event))
+        values: list[CorrelationGroup] = []
+        correlated_indexes: set[int] = set()
+        for (id_type, value), items in grouped.items():
+            if len(items) < 2:
+                continue
+            ordered = sorted(items, key=lambda item: item[1].timestamp)
+            services = tuple(sorted({event.service for _, event in ordered}))
+            confidence = self._correlation_confidence(id_type, len(services))
+            correlated_indexes.update(index for index, _ in ordered)
+            values.append(
+                CorrelationGroup(
+                    correlation_ref=correlation_ref(id_type, value),
+                    id_type=id_type,
+                    event_count=len(ordered),
+                    services=services,
+                    first_seen=self._timestamp(ordered[0][1]),
+                    last_seen=self._timestamp(ordered[-1][1]),
+                    confidence=confidence,
+                )
+            )
+        values.sort(
+            key=lambda item: (-item.confidence, -item.event_count, item.correlation_ref)
+        )
+        coverage = round(len(correlated_indexes) / len(events), 4) if events else 0.0
+        confidence = (
+            round(
+                sum(item.confidence * item.event_count for item in values)
+                / sum(item.event_count for item in values),
+                4,
+            )
+            if values
+            else 0.0
+        )
+        if confidence >= 0.85:
+            level = "HIGH"
+        elif confidence >= 0.6:
+            level = "MEDIUM"
+        elif confidence:
+            level = "LOW"
+        else:
+            level = "NONE"
+        return values, CorrelationSummary(
+            total_events=len(events),
+            correlated_events=len(correlated_indexes),
+            coverage=coverage,
+            confidence=confidence,
+            level=level,
+        )
+
+    def _timeline(
+        self,
+        request: BuildRequest,
+        patterns: list[IncidentPattern],
+        correlations: list[CorrelationGroup],
+    ) -> list[TimelineEntry]:
+        values: list[TimelineEntry] = []
+        valid_correlation_refs = {item.correlation_ref for item in correlations}
+        for marker in request.deployment_markers:
+            if marker.timestamp.tzinfo is None:
+                raise ValueError("deployment marker timestamp must be timezone-aware")
+            if marker.kind not in _MARKER_KINDS:
+                raise ValueError("unsupported deployment marker kind")
+            if not marker.service.strip():
+                raise ValueError("deployment marker service is required")
+            if not _VERSION.fullmatch(marker.version):
+                raise ValueError("deployment marker version is invalid")
+            evidence = EvidenceRef.from_mapping(marker.evidence)
+            values.append(
+                TimelineEntry(
+                    timestamp=self._datetime(marker.timestamp),
+                    kind=marker.kind,
+                    service=marker.service,
+                    summary=normalize_message(marker.summary),
+                    fingerprint=None,
+                    version=marker.version,
+                    metadata=sanitize_fields(marker.metadata),
+                    correlation_refs=(),
+                    evidence=(evidence,),
+                )
+            )
+        for pattern in patterns:
+            matching = [
+                event
+                for event in request.events
+                if (event_template(event.message), event.severity.upper().strip() or "INFO")
+                == (pattern.template, pattern.severity)
+            ]
+            refs = {
+                correlation_ref(id_type, value)
+                for event in matching
+                for id_type, value in correlation_values(event.fields, event.message).items()
+                if correlation_ref(id_type, value) in valid_correlation_refs
+            }
+            values.append(
+                TimelineEntry(
+                    timestamp=pattern.first_seen,
+                    kind="log_pattern",
+                    service=pattern.services[0] if len(pattern.services) == 1 else "multiple",
+                    summary=pattern.template[:240],
+                    fingerprint=pattern.fingerprint,
+                    version=None,
+                    metadata={"count": pattern.count, "severity": pattern.severity},
+                    correlation_refs=tuple(sorted(refs)),
+                    evidence=pattern.evidence,
+                )
+            )
+        return sorted(values, key=lambda item: (item.timestamp, item.kind, item.service))
+
     def _pattern(self, bucket: _Bucket) -> IncidentPattern:
         ordered = sorted(bucket.events, key=lambda event: event.timestamp)
         fingerprint = self._fingerprint(bucket.template, bucket.severity)
         protected = bucket.severity in _PROTECTED_SEVERITIES
+        stack_ids = {
+            signature.fingerprint
+            for event in ordered
+            if (signature := stack_signature(event.message)) is not None
+        }
         return IncidentPattern(
             fingerprint=fingerprint,
             template=bucket.template,
@@ -158,6 +342,7 @@ class IncidentContextBuilder:
             ),
             evidence=tuple(bucket.evidence.values()),
             retention_reason="protected_severity" if protected else "dominant_frequency",
+            exception_fingerprint=next(iter(stack_ids)) if len(stack_ids) == 1 else None,
         )
 
     @staticmethod
@@ -172,7 +357,27 @@ class IncidentContextBuilder:
 
     @staticmethod
     def _timestamp(event: LogEvent) -> str:
-        return event.timestamp.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        return IncidentContextBuilder._datetime(event.timestamp)
+
+    @staticmethod
+    def _datetime(value: datetime) -> str:
+        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    @staticmethod
+    def _correlation_confidence(id_type: str, service_count: int) -> float:
+        if service_count > 1:
+            return {
+                "trace_id": 1.0,
+                "correlation_id": 0.9,
+                "request_id": 0.85,
+                "session_id": 0.7,
+            }.get(id_type, 0.6)
+        return {
+            "trace_id": 0.7,
+            "correlation_id": 0.65,
+            "request_id": 0.6,
+            "session_id": 0.55,
+        }.get(id_type, 0.5)
 
     @staticmethod
     def _varied_samples(events: list[LogEvent]) -> list[LogEvent]:
