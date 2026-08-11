@@ -234,6 +234,8 @@ Statically recoverable source forms:
 
 Runtime normalization replaces volatile values with `<arg>` only through deterministic rules already used by log-pattern normalization. Source and runtime forms must converge to the same canonical template.
 
+Whitespace rule (applies identically to source literals and runtime messages): every run of whitespace collapses to a single space, and leading/trailing whitespace is trimmed. A template literal written with indentation or alignment therefore converges with the runtime message it produces. The transformation is idempotent and is applied before fingerprinting, so a padded source literal and its runtime message always yield the same digest.
+
 Dynamic concatenation, unknown functions, or computed message expressions are marked `DYNAMIC_LOG_CALLSITE`; the system does not guess a template.
 
 Fingerprint:

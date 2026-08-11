@@ -124,6 +124,43 @@ def test_runtime_normalization_keeps_static_text():
     assert canonicalize_runtime_message("v2 of the api") == "v2 of the api"
 
 
+def test_bugzero_style_leading_repeated_whitespace_converges():
+    """Real BugZero-style callsite (` ⚠️  Graphify evidence index: ${index}`):
+    the static source template and the runtime message normalize whitespace
+    identically, so canonical template and versioned fingerprint are equal."""
+    source = 'if (options.verbose) console.warn(`  ⚠️  Graphify evidence index: ${index}`);\n'
+    (call,) = extract_observability_callsites(source)
+    assert call.dynamic is False
+    assert call.canonical_template == "⚠️ Graphify evidence index: <arg>"
+    runtime_message = "  ⚠️  Graphify evidence index: 42"
+    assert canonicalize_runtime_message(runtime_message) == call.canonical_template
+    assert fingerprint_template(canonicalize_runtime_message(runtime_message)) == fingerprint_template(
+        call.canonical_template
+    )
+    # Frozen-contract digest for the collapsed template; Graphify's sha256_hex
+    # must produce the same value for the same source literal.
+    assert fingerprint_template(call.canonical_template) == (
+        "04396c276aefb5be306f09bf25b529ee980335395261223c5e24df3e4714ad50"
+    )
+
+
+def test_static_string_whitespace_collapses_like_runtime():
+    source = 'console.info(" job   started ");\n'
+    assert _templates(source) == ["job started"]
+    assert canonicalize_runtime_message(" job   started ") == "job started"
+    assert fingerprint_template(" job   started ") == fingerprint_template("job started")
+
+
+def test_multiline_template_whitespace_collapses_like_runtime():
+    source = "logger.warn(`line one\nline two ${id}`);\n"
+    (call,) = extract_observability_callsites(source)
+    assert call.canonical_template == "line one line two <arg>"
+    assert canonicalize_runtime_message("line one\nline two 42") == call.canonical_template
+    assert fingerprint_template(canonicalize_runtime_message("line one\nline two 42")) == (
+        fingerprint_template(call.canonical_template)
+    )
+
+
 def test_same_template_at_multiple_callsites_shares_anchor_identity():
     source = """
 class A {

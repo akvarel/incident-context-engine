@@ -7,7 +7,9 @@ The public fingerprint for a canonical template is::
 The lowercase hexadecimal digest is the public fingerprint.  Line, file,
 repository, runtime values, timestamp, pod, request ID, and tenant are
 excluded, so fingerprints are stable across line movement when canonical
-source content is unchanged.
+source content is unchanged.  The canonical template is whitespace-normalized
+before hashing (``normalize_template_whitespace``), so a source literal and
+its runtime message always produce the same digest.
 
 Non-template anchors (logger, exception, metric, event, span) fingerprint the
 deterministic anchor identity so they are stable across line movement too.
@@ -19,6 +21,7 @@ from __future__ import annotations
 
 import hashlib
 
+from .canonicalization import normalize_template_whitespace
 from .models import (
     CANONICALIZATION_VERSION,
     ObservabilityAnchor,
@@ -31,7 +34,7 @@ def fingerprint_template(canonical_template: str) -> str:
     """Return the deterministic public fingerprint of a canonical template."""
     if not canonical_template or not canonical_template.strip():
         raise ValueError("canonical_template is required")
-    normalized = canonical_template.strip()
+    normalized = normalize_template_whitespace(canonical_template)
     digest = hashlib.sha256(f"{CANONICALIZATION_VERSION}\n{normalized}".encode("utf-8")).hexdigest()
     return digest
 

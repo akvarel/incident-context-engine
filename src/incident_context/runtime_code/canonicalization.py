@@ -24,6 +24,12 @@ same deterministic rule family used by log-pattern normalization so that
 source and runtime forms converge to the same canonical template.  The rules
 are ordered and documented; the result is idempotent.
 
+Canonical templates normalize whitespace identically for source and runtime
+forms: every run of whitespace collapses to a single space and leading/
+trailing whitespace is trimmed (``normalize_template_whitespace``).  A
+template literal that was written with aligned or indented fragments
+therefore converges with the runtime message it produces.
+
 The scanner is a documented deterministic lexer, not a full ECMAScript
 parser.  It deliberately treats any first argument that is not exactly one
 recoverable literal as dynamic so it never fabricates a template from code it
@@ -91,6 +97,16 @@ _RUNTIME_RULES: tuple[tuple[re.Pattern[str], str], ...] = (
 )
 
 
+def normalize_template_whitespace(text: str) -> str:
+    """Collapse every run of whitespace to one space and trim the edges.
+
+    This is the single whitespace rule for canonical templates.  Source
+    literals and runtime messages apply it identically so both forms converge
+    to the same canonical template; the transformation is idempotent.
+    """
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def canonicalize_runtime_message(message: str) -> str:
     """Deterministically normalize a runtime message to its canonical template.
 
@@ -101,7 +117,7 @@ def canonicalize_runtime_message(message: str) -> str:
     result = str(message)
     for pattern, replacement in _RUNTIME_RULES:
         result = pattern.sub(replacement, result)
-    return re.sub(r"\s+", " ", result).strip()
+    return normalize_template_whitespace(result)
 
 
 # ---------------------------------------------------------------------------
@@ -571,9 +587,11 @@ def _static_literal(arguments: list[SourceToken]) -> str | None:
 
     Accepts exactly one string/template literal, or an object literal of the
     structured form ``{ message: <literal> }``.  Anything else is dynamic.
+    Static templates are whitespace-normalized exactly like runtime messages
+    (``normalize_template_whitespace``) so both forms converge.
     """
     if len(arguments) == 1 and arguments[0].kind in ("STRING", "TEMPLATE"):
-        return arguments[0].value
+        return normalize_template_whitespace(arguments[0].value)
     if len(arguments) >= 5:
         first = arguments[0]
         last = arguments[-1]
@@ -589,7 +607,7 @@ def _static_literal(arguments: list[SourceToken]) -> str | None:
                     and colon.value == ":"
                     and literal.kind in ("STRING", "TEMPLATE")
                 ):
-                    return literal.value
+                    return normalize_template_whitespace(literal.value)
     return None
 
 
@@ -656,5 +674,6 @@ __all__ = [
     "SourceToken",
     "canonicalize_runtime_message",
     "extract_observability_callsites",
+    "normalize_template_whitespace",
     "tokenize_source",
 ]

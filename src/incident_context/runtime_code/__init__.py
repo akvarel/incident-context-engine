@@ -71,6 +71,7 @@ from .canonicalization import (
     SourceToken,
     canonicalize_runtime_message,
     extract_observability_callsites,
+    normalize_template_whitespace,
     tokenize_source,
 )
 from .context import BASELINE_CONTEXT_VERSION, build_baseline_context, build_compact_context
@@ -249,6 +250,7 @@ __all__ = [
     "is_strong_signal",
     "load_benchmark_cases",
     "metrics_to_markdown",
+    "normalize_template_whitespace",
     "run_benchmark",
     "signal_family_score",
     "tokenize_source",
