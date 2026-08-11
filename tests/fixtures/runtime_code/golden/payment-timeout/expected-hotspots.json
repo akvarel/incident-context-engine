@@ -1,0 +1,138 @@
+[
+  {
+    "anomalyMagnitude": 0.8,
+    "callsite": {
+      "anchorFingerprint": "d99ebd9026b6ce2c8cd2e4f6e13309cce3c585aa69c3fb25d2910076314e89c3",
+      "anchorKind": "LOG_TEMPLATE",
+      "endLine": 6,
+      "framework": "logger",
+      "graphNodeId": "fn_reserve",
+      "language": "typescript",
+      "logger": null,
+      "ownerSymbol": "reserve()",
+      "repository": "avion-payments",
+      "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "sourceFile": "src/payments/paymentService.ts",
+      "startLine": 6
+    },
+    "confidenceBand": "HIGH",
+    "correlationIds": [
+      "ev-log-avion-payments",
+      "ev-metric-avion-payments"
+    ],
+    "evidenceIds": [
+      "ev-log-avion-payments",
+      "ev-metric-avion-payments"
+    ],
+    "independentSignalKinds": [
+      "LEXICAL",
+      "LOGGER_CLASS",
+      "LOG_TEMPLATE_EXACT"
+    ],
+    "novelty": 0.6,
+    "role": "HOTSPOT",
+    "schemaVersion": "runtime-code-correlation/v1",
+    "score": 0.745,
+    "severity": "critical",
+    "temporalRelevance": 0.5
+  },
+  {
+    "anomalyMagnitude": 0.8,
+    "callsite": {
+      "anchorFingerprint": "dynamic-v1:b5dd4ba49f9f548829d8dd6394e69519c074efc3827273985a1b489329e21cac",
+      "anchorKind": "DYNAMIC_LOG_CALLSITE",
+      "endLine": 1,
+      "framework": null,
+      "graphNodeId": "cfg_payment_timeout",
+      "language": null,
+      "logger": null,
+      "ownerSymbol": "payment.timeout",
+      "repository": "avion-payments",
+      "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "sourceFile": "config/payment.json",
+      "startLine": 1
+    },
+    "confidenceBand": "LOW",
+    "correlationIds": [
+      "ev-metric-avion-payments"
+    ],
+    "evidenceIds": [
+      "ev-metric-avion-payments"
+    ],
+    "independentSignalKinds": [
+      "SEMANTIC"
+    ],
+    "novelty": 0.6,
+    "role": "HOTSPOT",
+    "schemaVersion": "runtime-code-correlation/v1",
+    "score": 0.52,
+    "severity": "critical",
+    "temporalRelevance": 1.0
+  },
+  {
+    "anomalyMagnitude": 0.8,
+    "callsite": {
+      "anchorFingerprint": "dynamic-v1:2113fb0d4a12e94fe413047cce9048cea2f07e45d62400e08d37d28f0e4a6540",
+      "anchorKind": "DYNAMIC_LOG_CALLSITE",
+      "endLine": 9,
+      "framework": null,
+      "graphNodeId": "fn_charge",
+      "language": null,
+      "logger": null,
+      "ownerSymbol": "charge()",
+      "repository": "avion-payments",
+      "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "sourceFile": "src/payments/paymentService.ts",
+      "startLine": 9
+    },
+    "confidenceBand": "LOW",
+    "correlationIds": [
+      "ev-metric-avion-payments"
+    ],
+    "evidenceIds": [
+      "ev-metric-avion-payments"
+    ],
+    "independentSignalKinds": [
+      "SEMANTIC"
+    ],
+    "novelty": 0.6,
+    "role": "HOTSPOT",
+    "schemaVersion": "runtime-code-correlation/v1",
+    "score": 0.52,
+    "severity": "critical",
+    "temporalRelevance": 1.0
+  },
+  {
+    "anomalyMagnitude": 0.0,
+    "callsite": {
+      "anchorFingerprint": "dynamic-v1:2f0cafd875f33d91e1bea0877e1b1bb616920d3aa1de35f6b8442b88f13fa7ff",
+      "anchorKind": "DYNAMIC_LOG_CALLSITE",
+      "endLine": 13,
+      "framework": "logger",
+      "graphNodeId": "fn_refund",
+      "language": "typescript",
+      "logger": null,
+      "ownerSymbol": "refund()",
+      "repository": "avion-payments",
+      "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "sourceFile": "src/payments/paymentService.ts",
+      "startLine": 13
+    },
+    "confidenceBand": "MEDIUM",
+    "correlationIds": [
+      "ev-log-avion-payments"
+    ],
+    "evidenceIds": [
+      "ev-log-avion-payments"
+    ],
+    "independentSignalKinds": [
+      "LOGGER_CLASS"
+    ],
+    "novelty": 0.0,
+    "role": "HOTSPOT",
+    "schemaVersion": "runtime-code-correlation/v1",
+    "score": 0.41,
+    "severity": "warn",
+    "temporalRelevance": 0.0
+  }
+]

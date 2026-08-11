@@ -1,0 +1,202 @@
+{
+  "built_at_commit": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "directed": true,
+  "graph": {
+    "hyperedges": []
+  },
+  "hyperedges": [],
+  "links": [
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "file_payment_service_ts",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L5",
+      "target": "fn_reserve",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "file_payment_service_ts",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L9",
+      "target": "fn_charge",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "file_payment_service_ts",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L12",
+      "target": "fn_refund",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "metadata": {
+        "framework": "logger",
+        "method": "warn"
+      },
+      "relation": "emits_log_template",
+      "source": "fn_reserve",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L6",
+      "target": "obs_payment_timeout_log",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "metadata": {
+        "framework": "logger",
+        "method": "error"
+      },
+      "relation": "has_dynamic_log_callsite",
+      "source": "fn_refund",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L13",
+      "target": "obs_refund_dynamic",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "calls",
+      "source": "fn_reserve",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L7",
+      "target": "fn_charge",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "references",
+      "source": "fn_reserve",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L7",
+      "target": "cfg_payment_timeout",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "references",
+      "source": "fn_reserve",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L7",
+      "target": "pkg_payments_lib",
+      "weight": 1.0
+    }
+  ],
+  "multigraph": true,
+  "nodes": [
+    {
+      "_origin": "ast",
+      "file_type": "code",
+      "id": "file_payment_service_ts",
+      "label": "src/payments/paymentService.ts",
+      "norm_label": "src/payments/paymentService.ts",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L1"
+    },
+    {
+      "_origin": "ast",
+      "file_type": "code",
+      "id": "fn_reserve",
+      "label": "reserve()",
+      "norm_label": "reserve()",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L5"
+    },
+    {
+      "_origin": "ast",
+      "file_type": "code",
+      "id": "fn_charge",
+      "label": "charge()",
+      "norm_label": "charge()",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L9"
+    },
+    {
+      "_origin": "ast",
+      "file_type": "code",
+      "id": "fn_refund",
+      "label": "refund()",
+      "norm_label": "refund()",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L12"
+    },
+    {
+      "_origin": "ast",
+      "file_type": "code",
+      "id": "cfg_payment_timeout",
+      "label": "payment.timeout",
+      "norm_label": "payment.timeout",
+      "source_file": "config/payment.json",
+      "source_location": "L1"
+    },
+    {
+      "_origin": "ast",
+      "file_type": "code",
+      "id": "pkg_payments_lib",
+      "label": "@acme/payments-lib",
+      "norm_label": "@acme/payments-lib",
+      "source_file": "node_modules/@acme/payments-lib/index.js"
+    },
+    {
+      "_origin": "ast",
+      "anchor_kind": "LOG_TEMPLATE",
+      "canonical_template": "Payment timeout order=<arg> timeout=<arg>",
+      "canonicalization_version": "runtime-code-canonicalization/v1",
+      "file_type": "code",
+      "id": "obs_payment_timeout_log",
+      "label": "log_template Payment timeout order=<arg> timeout=<arg>",
+      "metadata": {
+        "enclosing_symbol": "fn_reserve",
+        "enclosing_symbol_label": "reserve()",
+        "framework": "logger",
+        "language": "typescript",
+        "method": "warn"
+      },
+      "norm_label": "log_template payment timeout order=<arg> timeout=<arg>",
+      "sha256": "d99ebd9026b6ce2c8cd2e4f6e13309cce3c585aa69c3fb25d2910076314e89c3",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L6",
+      "type": "observability_anchor"
+    },
+    {
+      "_origin": "ast",
+      "anchor_kind": "DYNAMIC_LOG_CALLSITE",
+      "canonicalization_version": "runtime-code-canonicalization/v1",
+      "file_type": "code",
+      "id": "obs_refund_dynamic",
+      "label": "dynamic_log_callsite",
+      "metadata": {
+        "enclosing_symbol": "fn_refund",
+        "enclosing_symbol_label": "refund()",
+        "framework": "logger",
+        "language": "typescript",
+        "method": "error"
+      },
+      "norm_label": "dynamic_log_callsite",
+      "source_file": "src/payments/paymentService.ts",
+      "source_location": "L13",
+      "type": "observability_anchor"
+    }
+  ]
+}

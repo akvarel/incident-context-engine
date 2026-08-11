@@ -32,6 +32,7 @@ from ..normalization import sanitize_fields
 SCHEMA_VERSION = "runtime-code-correlation/v1"
 CANONICALIZATION_VERSION = "runtime-code-canonicalization/v1"
 MATCHER_VERSION = "runtime-code-matcher/v1"
+CONTEXT_VERSION = "runtime-code-context/v1"
 
 # ---------------------------------------------------------------------------
 # Bounds (contract section 6 and 11)

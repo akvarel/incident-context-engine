@@ -1,0 +1,198 @@
+[
+  {
+    "candidates": [
+      {
+        "callsite": {
+          "anchorFingerprint": "d99ebd9026b6ce2c8cd2e4f6e13309cce3c585aa69c3fb25d2910076314e89c3",
+          "anchorKind": "LOG_TEMPLATE",
+          "endLine": 6,
+          "framework": "logger",
+          "graphNodeId": "fn_reserve",
+          "language": "typescript",
+          "logger": null,
+          "ownerSymbol": "reserve()",
+          "repository": "avion-payments",
+          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "sourceFile": "src/payments/paymentService.ts",
+          "startLine": 6
+        },
+        "confidenceBand": "HIGH",
+        "contradictions": [],
+        "explanation": "evidence ev-log-avion-payments (LOG_PATTERN) role EMISSION_SITE band HIGH | signals: LOGGER_CLASS@lookup:find_symbols_by_logger:PaymentService, LOG_TEMPLATE_EXACT@lookup:find_callsites_by_fingerprint:d99ebd9026b6ce2c8cd2e4f6e13309cce3c585aa69c3fb25d2910076314e89c3",
+        "role": "EMISSION_SITE",
+        "score": 1.3,
+        "signals": [
+          {
+            "description": "logger PaymentService matched",
+            "provenance": "lookup:find_symbols_by_logger:PaymentService",
+            "signalKind": "LOGGER_CLASS"
+          },
+          {
+            "description": "exact template fingerprint d99ebd9026b6...",
+            "provenance": "lookup:find_callsites_by_fingerprint:d99ebd9026b6ce2c8cd2e4f6e13309cce3c585aa69c3fb25d2910076314e89c3",
+            "signalKind": "LOG_TEMPLATE_EXACT"
+          }
+        ]
+      },
+      {
+        "callsite": {
+          "anchorFingerprint": "dynamic-v1:2f0cafd875f33d91e1bea0877e1b1bb616920d3aa1de35f6b8442b88f13fa7ff",
+          "anchorKind": "DYNAMIC_LOG_CALLSITE",
+          "endLine": 13,
+          "framework": "logger",
+          "graphNodeId": "fn_refund",
+          "language": "typescript",
+          "logger": null,
+          "ownerSymbol": "refund()",
+          "repository": "avion-payments",
+          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "sourceFile": "src/payments/paymentService.ts",
+          "startLine": 13
+        },
+        "confidenceBand": "MEDIUM",
+        "contradictions": [],
+        "explanation": "evidence ev-log-avion-payments (LOG_PATTERN) role EMISSION_SITE band MEDIUM | signals: LOGGER_CLASS@lookup:find_symbols_by_logger:PaymentService",
+        "role": "EMISSION_SITE",
+        "score": 0.5,
+        "signals": [
+          {
+            "description": "logger PaymentService matched",
+            "provenance": "lookup:find_symbols_by_logger:PaymentService",
+            "signalKind": "LOGGER_CLASS"
+          }
+        ]
+      }
+    ],
+    "evidenceId": "ev-log-avion-payments",
+    "matcherVersion": "runtime-code-matcher/v1",
+    "provenance": {
+      "attemptedLookups": [
+        "find_callsites_by_fingerprint",
+        "find_symbols_by_logger"
+      ],
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "matcherVersion": "runtime-code-matcher/v1",
+      "note": "primary lookup failure returns UNAVAILABLE; optional fallback failure is recorded here and does not hide stronger matches",
+      "scope": {
+        "repository": "avion-payments",
+        "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "revisionQuality": "EXACT"
+      },
+      "unavailableLookups": []
+    },
+    "revisionQuality": "EXACT",
+    "schemaVersion": "runtime-code-correlation/v1",
+    "status": "MATCHED"
+  },
+  {
+    "candidates": [
+      {
+        "callsite": {
+          "anchorFingerprint": "d99ebd9026b6ce2c8cd2e4f6e13309cce3c585aa69c3fb25d2910076314e89c3",
+          "anchorKind": "LOG_TEMPLATE",
+          "endLine": 6,
+          "framework": "logger",
+          "graphNodeId": "fn_reserve",
+          "language": "typescript",
+          "logger": null,
+          "ownerSymbol": "reserve()",
+          "repository": "avion-payments",
+          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "sourceFile": "src/payments/paymentService.ts",
+          "startLine": 6
+        },
+        "confidenceBand": "LOW",
+        "contradictions": [],
+        "explanation": "evidence ev-metric-avion-payments (METRIC_ANOMALY) role METRIC_SITE band LOW | signals: LEXICAL@lookup:find_symbols_by_text:payment_timeout",
+        "role": "METRIC_SITE",
+        "score": 0.2,
+        "signals": [
+          {
+            "description": "lexical fallback text overlap",
+            "provenance": "lookup:find_symbols_by_text:payment_timeout",
+            "signalKind": "LEXICAL"
+          }
+        ]
+      },
+      {
+        "callsite": {
+          "anchorFingerprint": "dynamic-v1:b5dd4ba49f9f548829d8dd6394e69519c074efc3827273985a1b489329e21cac",
+          "anchorKind": "DYNAMIC_LOG_CALLSITE",
+          "endLine": 1,
+          "framework": null,
+          "graphNodeId": "cfg_payment_timeout",
+          "language": null,
+          "logger": null,
+          "ownerSymbol": "payment.timeout",
+          "repository": "avion-payments",
+          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "sourceFile": "config/payment.json",
+          "startLine": 1
+        },
+        "confidenceBand": "LOW",
+        "contradictions": [],
+        "explanation": "evidence ev-metric-avion-payments (METRIC_ANOMALY) role RELATED_SYMBOL band LOW | signals: SEMANTIC@lookup:expand_symbol:fn_reserve",
+        "role": "RELATED_SYMBOL",
+        "score": 0.1,
+        "signals": [
+          {
+            "description": "graph expansion related symbol",
+            "provenance": "lookup:expand_symbol:fn_reserve",
+            "signalKind": "SEMANTIC"
+          }
+        ]
+      },
+      {
+        "callsite": {
+          "anchorFingerprint": "dynamic-v1:2113fb0d4a12e94fe413047cce9048cea2f07e45d62400e08d37d28f0e4a6540",
+          "anchorKind": "DYNAMIC_LOG_CALLSITE",
+          "endLine": 9,
+          "framework": null,
+          "graphNodeId": "fn_charge",
+          "language": null,
+          "logger": null,
+          "ownerSymbol": "charge()",
+          "repository": "avion-payments",
+          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "sourceFile": "src/payments/paymentService.ts",
+          "startLine": 9
+        },
+        "confidenceBand": "LOW",
+        "contradictions": [],
+        "explanation": "evidence ev-metric-avion-payments (METRIC_ANOMALY) role RELATED_SYMBOL band LOW | signals: SEMANTIC@lookup:expand_symbol:fn_reserve",
+        "role": "RELATED_SYMBOL",
+        "score": 0.1,
+        "signals": [
+          {
+            "description": "graph expansion related symbol",
+            "provenance": "lookup:expand_symbol:fn_reserve",
+            "signalKind": "SEMANTIC"
+          }
+        ]
+      }
+    ],
+    "evidenceId": "ev-metric-avion-payments",
+    "matcherVersion": "runtime-code-matcher/v1",
+    "provenance": {
+      "attemptedLookups": [
+        "expand_symbol",
+        "find_symbols_by_metric",
+        "find_symbols_by_text"
+      ],
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "matcherVersion": "runtime-code-matcher/v1",
+      "note": "primary lookup failure returns UNAVAILABLE; optional fallback failure is recorded here and does not hide stronger matches",
+      "scope": {
+        "repository": "avion-payments",
+        "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "revisionQuality": "EXACT"
+      },
+      "unavailableLookups": []
+    },
+    "revisionQuality": "EXACT",
+    "schemaVersion": "runtime-code-correlation/v1",
+    "status": "AMBIGUOUS"
+  }
+]

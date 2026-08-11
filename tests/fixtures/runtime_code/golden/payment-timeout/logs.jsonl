@@ -1,0 +1,9 @@
+[
+  {
+    "level": "warn",
+    "logger": "PaymentService",
+    "msg": "Payment timeout order=19382 timeout=5000",
+    "service": "avion-payments",
+    "ts": "2026-08-11T12:00:03Z"
+  }
+]

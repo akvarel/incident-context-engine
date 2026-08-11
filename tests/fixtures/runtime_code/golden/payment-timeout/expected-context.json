@@ -1,0 +1,113 @@
+{
+  "correlation": {
+    "ambiguous": 1,
+    "degradedRevision": 0,
+    "matched": 1,
+    "total": 2,
+    "unavailable": 0,
+    "unresolved": 0
+  },
+  "graphNeighborhood": [
+    {
+      "endLine": 9,
+      "relatedGraphNodeId": "fn_charge",
+      "relatedSymbol": "charge()",
+      "relation": "calls",
+      "sourceFile": "src/payments/paymentService.ts",
+      "sourceGraphNodeId": "fn_reserve",
+      "startLine": 9
+    },
+    {
+      "endLine": 1,
+      "relatedGraphNodeId": "cfg_payment_timeout",
+      "relatedSymbol": "payment.timeout",
+      "relation": "references",
+      "sourceFile": "config/payment.json",
+      "sourceGraphNodeId": "fn_reserve",
+      "startLine": 1
+    }
+  ],
+  "hotspots": [
+    {
+      "confidenceBand": "HIGH",
+      "endLine": 6,
+      "evidenceIds": [
+        "ev-log-avion-payments",
+        "ev-metric-avion-payments"
+      ],
+      "graphNodeId": "fn_reserve",
+      "independentSignalKinds": [
+        "LEXICAL",
+        "LOGGER_CLASS",
+        "LOG_TEMPLATE_EXACT"
+      ],
+      "score": 0.745,
+      "severity": "critical",
+      "sourceFile": "src/payments/paymentService.ts",
+      "startLine": 6,
+      "symbol": "reserve()"
+    },
+    {
+      "confidenceBand": "LOW",
+      "endLine": 1,
+      "evidenceIds": [
+        "ev-metric-avion-payments"
+      ],
+      "graphNodeId": "cfg_payment_timeout",
+      "independentSignalKinds": [
+        "SEMANTIC"
+      ],
+      "score": 0.52,
+      "severity": "critical",
+      "sourceFile": "config/payment.json",
+      "startLine": 1,
+      "symbol": "payment.timeout"
+    },
+    {
+      "confidenceBand": "LOW",
+      "endLine": 9,
+      "evidenceIds": [
+        "ev-metric-avion-payments"
+      ],
+      "graphNodeId": "fn_charge",
+      "independentSignalKinds": [
+        "SEMANTIC"
+      ],
+      "score": 0.52,
+      "severity": "critical",
+      "sourceFile": "src/payments/paymentService.ts",
+      "startLine": 9,
+      "symbol": "charge()"
+    },
+    {
+      "confidenceBand": "MEDIUM",
+      "endLine": 13,
+      "evidenceIds": [
+        "ev-log-avion-payments"
+      ],
+      "graphNodeId": "fn_refund",
+      "independentSignalKinds": [
+        "LOGGER_CLASS"
+      ],
+      "score": 0.41,
+      "severity": "warn",
+      "sourceFile": "src/payments/paymentService.ts",
+      "startLine": 13,
+      "symbol": "refund()"
+    }
+  ],
+  "incident": {
+    "end": "2026-08-11T12:01:00Z",
+    "environment": "prod",
+    "service": "avion-payments",
+    "start": "2026-08-11T12:00:00Z"
+  },
+  "note": "compact code context: canonical values only; no raw log messages, metric values, source bodies, credentials, or tenant identity",
+  "schemaVersion": "runtime-code-context/v1",
+  "scope": {
+    "repository": "avion-payments",
+    "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+    "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+    "revisionQuality": "EXACT"
+  }
+}

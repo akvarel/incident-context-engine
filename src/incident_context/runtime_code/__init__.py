@@ -16,7 +16,28 @@ Security boundaries (contract section 13):
   authorization are owned by the BugZero wrapper outside this core.
 """
 
-from .adapters import IndexedAnchor, ObservabilitySourceIndexer, TypeScriptJavaScriptIndexer
+from .adapters import (
+    DEFAULT_EXPANSION_RELATIONS,
+    GRAPHIFY_ANCHOR_KIND_DYNAMIC_CALLSITE,
+    GRAPHIFY_ANCHOR_KIND_LOG_TEMPLATE,
+    GRAPHIFY_ANCHOR_NODE_TYPE,
+    GRAPHIFY_EDGE_CALLS,
+    GRAPHIFY_EDGE_CONTAINS,
+    GRAPHIFY_EDGE_EMITS_LOG_TEMPLATE,
+    GRAPHIFY_EDGE_EXTENDS,
+    GRAPHIFY_EDGE_HAS_DYNAMIC_LOG_CALLSITE,
+    GRAPHIFY_EDGE_IMPLEMENTS,
+    GRAPHIFY_EDGE_IMPORTS,
+    GRAPHIFY_EDGE_INHERITS,
+    GRAPHIFY_EDGE_REFERENCES,
+    GRAPHIFY_EDGE_USES,
+    GraphifyJsonError,
+    GraphifyJsonLookup,
+    IndexedAnchor,
+    MAX_GRAPH_FILE_BYTES,
+    ObservabilitySourceIndexer,
+    TypeScriptJavaScriptIndexer,
+)
 from .canonicalization import (
     ObservabilityCall,
     SourceToken,
@@ -24,6 +45,7 @@ from .canonicalization import (
     extract_observability_callsites,
     tokenize_source,
 )
+from .context import build_compact_context
 from .fingerprint import (
     assert_anchor_fingerprint,
     anchor_fingerprint,
@@ -44,6 +66,7 @@ from .lookup import (
 from .matcher import DEFAULT_AMBIGUITY_MARGIN, correlate_evidence
 from .models import (
     CANONICALIZATION_VERSION,
+    CONTEXT_VERSION,
     MATCHER_VERSION,
     MAX_CANDIDATES_PER_KEY,
     MAX_EVIDENCE_BATCH,
@@ -88,10 +111,29 @@ from .scoring import (
 
 __all__ = [
     "CANONICALIZATION_VERSION",
+    "CONTEXT_VERSION",
+    "DEFAULT_AMBIGUITY_MARGIN",
+    "DEFAULT_EXPANSION_RELATIONS",
+    "GRAPHIFY_ANCHOR_KIND_DYNAMIC_CALLSITE",
+    "GRAPHIFY_ANCHOR_KIND_LOG_TEMPLATE",
+    "GRAPHIFY_ANCHOR_NODE_TYPE",
+    "GRAPHIFY_EDGE_CALLS",
+    "GRAPHIFY_EDGE_CONTAINS",
+    "GRAPHIFY_EDGE_EMITS_LOG_TEMPLATE",
+    "GRAPHIFY_EDGE_EXTENDS",
+    "GRAPHIFY_EDGE_HAS_DYNAMIC_LOG_CALLSITE",
+    "GRAPHIFY_EDGE_IMPLEMENTS",
+    "GRAPHIFY_EDGE_IMPORTS",
+    "GRAPHIFY_EDGE_INHERITS",
+    "GRAPHIFY_EDGE_REFERENCES",
+    "GRAPHIFY_EDGE_USES",
+    "GraphifyJsonError",
+    "GraphifyJsonLookup",
     "MATCHER_VERSION",
     "MAX_CANDIDATES_PER_KEY",
     "MAX_EVIDENCE_BATCH",
     "MAX_GRAPH_EXPANSION",
+    "MAX_GRAPH_FILE_BYTES",
     "MAX_HOTSPOTS",
     "MAX_LOOKUP_KEYS",
     "MAX_STRUCTURED_FIELDS",
@@ -133,6 +175,7 @@ __all__ = [
     "apply_contradictions",
     "assert_anchor_fingerprint",
     "base_band_for_signals",
+    "build_compact_context",
     "canonicalize_runtime_message",
     "contradiction_penalty",
     "correlate_evidence",
@@ -146,7 +189,6 @@ __all__ = [
     "is_strong_signal",
     "signal_family_score",
     "tokenize_source",
-    "DEFAULT_AMBIGUITY_MARGIN",
     "BAND_RANK",
     "CONTRADICTION_PENALTY",
     "SIGNAL_WEIGHTS",

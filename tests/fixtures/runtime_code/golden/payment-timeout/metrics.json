@@ -1,0 +1,10 @@
+[
+  {
+    "baseline": 2,
+    "name": "payment_timeout",
+    "service": "avion-payments",
+    "severity": "critical",
+    "ts": "2026-08-11T12:00:30Z",
+    "value": 47
+  }
+]
