@@ -2,12 +2,18 @@
 
 ```mermaid
 flowchart LR
-    P[Prometheus adapter] --> B[Incident Context Builder]
-    L[Loki adapter] --> B
+    A[Alert seed] --> W[Bounded incident window]
+    W --> P[Prometheus adapter and anomaly reducer]
+    P --> L[Loki narrowed query]
+    P --> B[Incident Context Builder]
+    L --> B
+    K[Kubernetes event normalizer] --> B
+    F[Grafana references] --> B
     R[Raw log adapter] --> B
     B --> I[Incident Snapshot IR]
     I --> J[Jcode and AI agents]
     I --> M[MCP or API expansion tools]
+    I --> Q[Quality harness and human report]
     I -. evidence references .-> P
     I -. evidence references .-> L
     I -. durable code links .-> G[Graphify]
@@ -25,6 +31,8 @@ same package without moving domain rules into HTTP handlers.
 4. Severe and rare protected categories are considered before dominant ordinary traffic.
 5. Missing or omitted evidence is visible through completeness metadata.
 6. Graphify receives durable code relationships, not transient log-event nodes.
+7. Query windows, item counts, token budgets, and cache lifetimes are bounded.
+8. Every compact metric, infrastructure event, report claim, and code reference keeps provenance.
 
 ## Delivery milestones
 
@@ -35,6 +43,10 @@ same package without moving domain rules into HTTP handlers.
    code references. Implemented.
 5. Self-hosted API/MCP reference service with tenant isolation, RBAC, audit, payload bounds, and
    rate limits. Implemented.
+6. Alert/window orchestration, metric-first narrowing, infrastructure/Grafana IR, bounded
+   observability tools, cardinality/cache telemetry, and incident-quality evaluation. Implemented.
+
+See `phase-completion-matrix.md` for the requirement-to-check map across all 48 phases.
 
 The reference service intentionally uses in-memory auth, audit, rate-limit, and context stores.
 Production persistence, distributed quotas, Vault-backed credentials, TLS termination, and

@@ -21,12 +21,31 @@ from urllib.parse import parse_qs, urlparse
 
 from .builder import IncidentContextBuilder
 from .context_compiler import ExpansionDirective, JcodeContextCompiler
-from .models import BuildRequest, EvidenceRef, IncidentContext, LogEvent
+from .models import (
+    BuildRequest,
+    EvidenceRef,
+    GrafanaReference,
+    IncidentContext,
+    InfrastructureEventGroup,
+    LogEvent,
+    MetricAnomaly,
+)
 
 
 _READ_ROLE = "incident_context:read"
 _WRITE_ROLE = "incident_context:write"
 _AUDIT_ROLE = "incident_context:audit"
+_MAX_READ_LIMIT = 50
+
+
+def _bounded_limit(value: Any, *, default: int = 25) -> int:
+    try:
+        limit = int(value if value is not None else default)
+    except (TypeError, ValueError) as error:
+        raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_limit", "limit must be an integer") from error
+    if limit < 1:
+        raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_limit", "limit must be positive")
+    return min(limit, _MAX_READ_LIMIT)
 
 
 def _hash_token(value: str) -> str:
@@ -394,6 +413,89 @@ class IncidentContextService:
 
         return parsed
 
+    def _parse_evidence_refs(self, value: Any, *, field_name: str) -> tuple[EvidenceRef, ...]:
+        if isinstance(value, Mapping):
+            return (EvidenceRef.from_mapping(dict(value)),)
+        if not isinstance(value, list):
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_evidence", f"{field_name} evidence must be an object or array")
+        refs = []
+        for index, item in enumerate(value):
+            if not isinstance(item, Mapping):
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_evidence", f"{field_name}.evidence[{index}] must be an object")
+            refs.append(EvidenceRef.from_mapping(dict(item)))
+        if not refs:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_evidence", f"{field_name} evidence is required")
+        return tuple(refs)
+
+    def _parse_metric_anomalies(self, items: Any) -> tuple[MetricAnomaly, ...]:
+        if items is None:
+            return ()
+        if not isinstance(items, list):
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_metric_anomalies", "metric_anomalies must be an array")
+        parsed = []
+        for index, item in enumerate(items):
+            if not isinstance(item, Mapping):
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_metric_anomaly", f"metric_anomalies[{index}] must be an object")
+            evidence = self._parse_evidence_refs(item.get("evidence"), field_name=f"metric_anomalies[{index}]")
+            parsed.append(MetricAnomaly(
+                anomaly_id=str(item.get("id", item.get("anomaly_id", f"metric-{index}"))),
+                metric=str(item.get("metric", "")),
+                service=str(item.get("service", "")),
+                state=str(item.get("state", "CHANGED")).upper(),
+                baseline=float(item["baseline"]) if item.get("baseline") is not None else None,
+                peak=float(item.get("peak", 0)),
+                start=str(item.get("start", "")),
+                peak_at=str(item.get("peakAt", item.get("peak_at", item.get("start", "")))),
+                shape=str(item.get("shape", "unknown")),
+                evidence=evidence,
+            ))
+        return tuple(parsed)
+
+    def _parse_infrastructure_events(self, items: Any) -> tuple[InfrastructureEventGroup, ...]:
+        if items is None:
+            return ()
+        if not isinstance(items, list):
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_infrastructure_events", "infrastructure_events must be an array")
+        parsed = []
+        for index, item in enumerate(items):
+            if not isinstance(item, Mapping):
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_infrastructure_event", f"infrastructure_events[{index}] must be an object")
+            evidence = self._parse_evidence_refs(item.get("evidence"), field_name=f"infrastructure_events[{index}]")
+            parsed.append(InfrastructureEventGroup(
+                fingerprint=str(item.get("fingerprint", f"infra-{index}")),
+                reason=str(item.get("reason", "unknown")),
+                object_kind=str(item.get("objectKind", item.get("object_kind", "unknown"))),
+                object_name=str(item.get("objectName", item.get("object_name", "unknown"))),
+                message_template=str(item.get("messageTemplate", item.get("message_template", ""))),
+                count=int(item.get("count", 1)),
+                first_seen=str(item.get("firstSeen", item.get("first_seen", ""))),
+                last_seen=str(item.get("lastSeen", item.get("last_seen", ""))),
+                evidence=evidence,
+            ))
+        return tuple(parsed)
+
+    def _parse_grafana_references(self, items: Any) -> tuple[GrafanaReference, ...]:
+        if items is None:
+            return ()
+        if not isinstance(items, list):
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_grafana_references", "grafana_references must be an array")
+        parsed = []
+        for index, item in enumerate(items):
+            if not isinstance(item, Mapping):
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_grafana_reference", f"grafana_references[{index}] must be an object")
+            evidence_refs = self._parse_evidence_refs(item.get("evidence"), field_name=f"grafana_references[{index}]")
+            variables = item.get("variables", {})
+            if not isinstance(variables, Mapping):
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_grafana_reference", "grafana variables must be an object")
+            parsed.append(GrafanaReference(
+                dashboard_uid=str(item.get("dashboardUid", item.get("dashboard_uid", ""))),
+                panel_id=int(item["panelId"]) if item.get("panelId") is not None else None,
+                url=str(item.get("url", "")),
+                variables=tuple(sorted((str(k), str(v)) for k, v in variables.items())),
+                evidence=evidence_refs[0],
+            ))
+        return tuple(parsed)
+
     def build_request(self, payload: Mapping[str, Any]) -> BuildRequest:
         scope = payload.get("scope")
         if not isinstance(scope, str) or not scope.strip():
@@ -422,13 +524,19 @@ class IncidentContextService:
                 baseline_events=parsed_baseline,
                 incident_window_seconds=int(incident_window_seconds) if incident_window_seconds is not None else None,
                 baseline_window_seconds=int(baseline_window_seconds) if baseline_window_seconds is not None else None,
+                metric_anomalies=self._parse_metric_anomalies(payload.get("metric_anomalies")),
+                infrastructure_events=self._parse_infrastructure_events(payload.get("infrastructure_events")),
+                grafana_references=self._parse_grafana_references(payload.get("grafana_references")),
             )
         except (TypeError, ValueError) as error:
             raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_build_request", str(error)) from error
 
     def build_context(self, payload: Mapping[str, Any], principal: ApiPrincipal) -> dict[str, Any]:
         request = self.build_request(payload)
-        context = self._builder.build(request)
+        try:
+            context = self._builder.build(request)
+        except (TypeError, ValueError) as error:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_build_request", str(error)) from error
         context_id = str(uuid.uuid4())
         self._context_store.save(
             principal.tenant_id,
@@ -457,6 +565,60 @@ class IncidentContextService:
             "tenantId": stored.tenant_id,
             "context": stored.payload,
             "createdAt": stored.created_at,
+        }
+
+    def _stored_context(self, principal: ApiPrincipal, context_id: str) -> StoredContext:
+        stored = self._context_store.get(principal.tenant_id, context_id)
+        if stored is None:
+            raise ServiceError(
+                HTTPStatus.NOT_FOUND,
+                "context_not_found",
+                "incident context was not found for this tenant",
+                outcome="not_found",
+            )
+        return stored
+
+    def read_observability(self, principal: ApiPrincipal, context_id: str, section: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        stored = self._stored_context(principal, context_id)
+        limit = _bounded_limit(arguments.get("limit"), default=25)
+        context = stored.payload
+
+        if section == "patterns":
+            items = context.get("patterns", [])
+        elif section == "pattern":
+            fingerprint = str(arguments.get("fingerprint", ""))
+            if not fingerprint:
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "fingerprint_required", "fingerprint is required")
+            items = [item for item in context.get("patterns", []) if item.get("fingerprint") == fingerprint]
+        elif section == "timeline":
+            items = context.get("timeline", [])
+        elif section == "correlations":
+            items = context.get("correlations", [])
+        elif section == "exceptions":
+            items = context.get("stackFingerprints", [])
+        elif section == "metrics":
+            items = context.get("metricAnomalies", [])
+        elif section == "infrastructure":
+            items = context.get("infrastructureEvents", [])
+        elif section == "deployments":
+            items = [item for item in context.get("timeline", []) if item.get("kind") == "deployment"]
+        elif section == "grafana":
+            items = context.get("grafanaReferences", [])
+        else:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_observability_section", "unknown observability section")
+
+        bounded = list(items)[:limit]
+        return {
+            "contextId": stored.context_id,
+            "tenantId": stored.tenant_id,
+            "section": section,
+            "limit": limit,
+            "items": bounded,
+            "telemetry": {
+                "availableItems": len(items),
+                "returnedItems": len(bounded),
+                "truncated": len(bounded) < len(items),
+            },
         }
 
     def disclose_context(
@@ -595,6 +757,43 @@ class IncidentContextService:
                             "required": ["context_id", "level"],
                         },
                     },
+                    *[
+                        {
+                            "name": name,
+                            "description": description,
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "context_id": {"type": "string"},
+                                    "limit": {"type": "integer", "maximum": _MAX_READ_LIMIT},
+                                },
+                                "required": ["context_id"],
+                            },
+                        }
+                        for name, description in (
+                            ("read_incident_timeline", "Read bounded incident timeline entries."),
+                            ("list_incident_patterns", "Read bounded retained incident patterns."),
+                            ("list_incident_correlations", "Read bounded correlation groups."),
+                            ("list_incident_exceptions", "Read bounded exception stack fingerprints."),
+                            ("list_metric_summaries", "Read bounded metric anomaly summaries."),
+                            ("list_infrastructure_events", "Read bounded infrastructure event groups."),
+                            ("list_deployments", "Read bounded deployment timeline entries."),
+                            ("list_grafana_references", "Read bounded Grafana dashboard references."),
+                        )
+                    ],
+                    {
+                        "name": "expand_incident_pattern",
+                        "description": "Read one retained incident pattern by fingerprint.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "context_id": {"type": "string"},
+                                "fingerprint": {"type": "string"},
+                                "limit": {"type": "integer", "maximum": _MAX_READ_LIMIT},
+                            },
+                            "required": ["context_id", "fingerprint"],
+                        },
+                    },
                 ]
             },
         }
@@ -606,6 +805,7 @@ class IncidentContextService:
             raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_mcp_arguments", "arguments must be an object")
 
         if name == "build_incident_context":
+            self.require_roles(principal, required=[_WRITE_ROLE])
             context = self.build_context(arguments, principal)
             result = context
             content = context["context"]
@@ -621,6 +821,33 @@ class IncidentContextService:
                 raise ServiceError(HTTPStatus.BAD_REQUEST, "context_id_required", "context_id is required")
             result = self.disclose_context(principal, context_id, arguments)
             content = result["disclosure"]
+        elif name in {
+            "read_incident_timeline",
+            "list_incident_patterns",
+            "expand_incident_pattern",
+            "list_incident_correlations",
+            "list_incident_exceptions",
+            "list_metric_summaries",
+            "list_infrastructure_events",
+            "list_deployments",
+            "list_grafana_references",
+        }:
+            context_id = str(arguments.get("context_id", ""))
+            if not context_id:
+                raise ServiceError(HTTPStatus.BAD_REQUEST, "context_id_required", "context_id is required")
+            section_by_tool = {
+                "read_incident_timeline": "timeline",
+                "list_incident_patterns": "patterns",
+                "expand_incident_pattern": "pattern",
+                "list_incident_correlations": "correlations",
+                "list_incident_exceptions": "exceptions",
+                "list_metric_summaries": "metrics",
+                "list_infrastructure_events": "infrastructure",
+                "list_deployments": "deployments",
+                "list_grafana_references": "grafana",
+            }
+            result = self.read_observability(principal, context_id, section_by_tool[str(name)], arguments)
+            content = result
         else:
             return {
                 "jsonrpc": "2.0",
@@ -730,7 +957,6 @@ class IncidentContextRequestHandler(BaseHTTPRequestHandler):
                     payload = service.mcp_tools(body.get("id"))
                 elif method == "tools/call":
                     action = "incident_context.mcp_call"
-                    service.require_roles(principal, required=[_WRITE_ROLE])
                     call_response = service.mcp_call(body.get("id"), body.get("params", {}), principal)
                     payload = call_response
                 else:

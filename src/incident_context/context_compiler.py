@@ -92,6 +92,9 @@ class DisclosedIncidentContext:
     stack_fingerprints: tuple[dict[str, Any], ...]
     timeline: tuple[dict[str, Any], ...]
     deltas: tuple[dict[str, Any], ...]
+    metric_anomalies: tuple[dict[str, Any], ...]
+    infrastructure_events: tuple[dict[str, Any], ...]
+    grafana_references: tuple[dict[str, Any], ...]
     hypotheses: tuple[dict[str, Any], ...]
 
     def to_dict(self) -> dict[str, Any]:
@@ -107,6 +110,9 @@ class DisclosedIncidentContext:
             "stackFingerprints": list(self.stack_fingerprints),
             "timeline": list(self.timeline),
             "deltas": list(self.deltas),
+            "metricAnomalies": list(self.metric_anomalies),
+            "infrastructureEvents": list(self.infrastructure_events),
+            "grafanaReferences": list(self.grafana_references),
             "hypotheses": list(self.hypotheses),
         }
 
@@ -121,6 +127,9 @@ class JcodeContextCompiler:
         "stack_fingerprints",
         "correlations",
         "deltas",
+        "metric_anomalies",
+        "infrastructure_events",
+        "grafana_references",
         "hypotheses",
     )
     _DEFAULT_MAX = {
@@ -130,6 +139,9 @@ class JcodeContextCompiler:
             "stack_fingerprints": 0,
             "correlations": 0,
             "deltas": 0,
+            "metric_anomalies": 3,
+            "infrastructure_events": 2,
+            "grafana_references": 1,
             "hypotheses": 0,
             "samples_per_pattern": 0,
         },
@@ -139,6 +151,9 @@ class JcodeContextCompiler:
             "stack_fingerprints": 0,
             "correlations": 3,
             "deltas": 3,
+            "metric_anomalies": 4,
+            "infrastructure_events": 3,
+            "grafana_references": 2,
             "hypotheses": 3,
             "samples_per_pattern": 0,
         },
@@ -148,6 +163,9 @@ class JcodeContextCompiler:
             "stack_fingerprints": 8,
             "correlations": 8,
             "deltas": 8,
+            "metric_anomalies": 12,
+            "infrastructure_events": 12,
+            "grafana_references": 8,
             "hypotheses": 8,
             "samples_per_pattern": 2,
         },
@@ -158,6 +176,9 @@ class JcodeContextCompiler:
         "stack_fingerprints": 20,
         "correlations": 20,
         "deltas": 20,
+        "metric_anomalies": 20,
+        "infrastructure_events": 20,
+        "grafana_references": 20,
         "hypotheses": 20,
         "samples_per_pattern": 6,
     }
@@ -192,6 +213,8 @@ class JcodeContextCompiler:
             "requiredTokens": context.required_tokens,
             "correlationCoverage": round(context.correlation_summary.coverage, 4),
             "investigationConfidence": round(context.correlation_summary.confidence, 4),
+            "metricAnomalyCount": len(context.metric_anomalies),
+            "infrastructureEventCount": len(context.infrastructure_events),
         }
 
         # Reserve room for the versioned envelope, investigation state and
@@ -225,6 +248,33 @@ class JcodeContextCompiler:
             context, directives_by_kind["stack_fingerprints"], budget, tokens_used
         )
         operations.append(stack_operation)
+
+        metric_anomalies, tokens_used, metric_operation = self._apply_serializable(
+            "metric_anomalies",
+            context.metric_anomalies,
+            directives_by_kind["metric_anomalies"],
+            budget,
+            tokens_used,
+        )
+        operations.append(metric_operation)
+
+        infrastructure_events, tokens_used, infrastructure_operation = self._apply_serializable(
+            "infrastructure_events",
+            context.infrastructure_events,
+            directives_by_kind["infrastructure_events"],
+            budget,
+            tokens_used,
+        )
+        operations.append(infrastructure_operation)
+
+        grafana_references, tokens_used, grafana_operation = self._apply_serializable(
+            "grafana_references",
+            context.grafana_references,
+            directives_by_kind["grafana_references"],
+            budget,
+            tokens_used,
+        )
+        operations.append(grafana_operation)
 
         hypotheses, tokens_used, hypotheses_operation = self._apply_hypotheses(
             context,
@@ -274,7 +324,36 @@ class JcodeContextCompiler:
             stack_fingerprints=stack_fingerprints,
             timeline=timeline,
             deltas=deltas,
+            metric_anomalies=metric_anomalies,
+            infrastructure_events=infrastructure_events,
+            grafana_references=grafana_references,
             hypotheses=hypotheses,
+        )
+
+    def _apply_serializable(
+        self,
+        kind: str,
+        values: tuple[Any, ...],
+        limit: int,
+        budget: int,
+        tokens_used: int,
+    ) -> tuple[tuple[dict[str, Any], ...], int, InvestigationOperation]:
+        requested = min(limit, len(values))
+        if limit <= 0:
+            return (), tokens_used, InvestigationOperation(kind, 0, 0, 0)
+        selected: list[dict[str, Any]] = []
+        spent = 0
+        for value in values[:limit]:
+            item = value.to_dict()
+            cost = self._estimate_tokens(item)
+            if tokens_used + spent + cost > budget:
+                break
+            selected.append(item)
+            spent += cost
+        return (
+            tuple(selected),
+            tokens_used + spent,
+            InvestigationOperation(kind, requested, len(selected), spent),
         )
 
     def _normalize_directives(

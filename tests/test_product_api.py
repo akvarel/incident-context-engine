@@ -59,7 +59,7 @@ def _request(url, method="GET", payload=None, *, api_key="", expect_json=True):
 
 
 @contextmanager
-def _run_service_server(*, requests_per_minute: int = 2):
+def _run_service_server(*, requests_per_minute: int = 2, max_payload_bytes: int = 1_000):
     auth = InMemoryApiKeyBackend()
     auth.register(
         "tenant-a-key",
@@ -76,13 +76,18 @@ def _run_service_server(*, requests_per_minute: int = 2):
         tenant_id="tenant-reader",
         roles={"incident_context:read"},
     )
+    auth.register(
+        "tenant-a-reader-key",
+        tenant_id="tenant-a",
+        roles={"incident_context:read"},
+    )
 
     service = IncidentContextService(
         auth_backend=auth,
         rate_limiter=InMemoryRateLimiter(requests_per_minute=requests_per_minute),
         context_store=InMemoryContextStore(max_entries_per_tenant=8),
         audit_log=InMemoryAuditLog(max_entries_per_tenant=16),
-        max_payload_bytes=1_000,
+        max_payload_bytes=max_payload_bytes,
     )
 
     server = build_http_server(service)
@@ -353,6 +358,165 @@ def test_mcp_surface_supports_initialize_tools_and_call(service_server):
         assert disclosed["disclosure"] == "L0"
 
 
+def test_mcp_observability_read_tools_are_reader_accessible_bounded_and_tenant_scoped():
+    with _run_service_server(requests_per_minute=20, max_payload_bytes=100_000) as server:
+        base = f"http://127.0.0.1:{server.server_port}"
+        payload = _incident_payload()
+        payload["metric_anomalies"] = [
+            {
+                "id": f"metric-{index}",
+                "metric": "http_errors",
+                "service": "payments",
+                "state": "spike",
+                "baseline": 1,
+                "peak": 10 + index,
+                "start": "2026-08-10T12:00:00Z",
+                "peakAt": "2026-08-10T12:00:30Z",
+                "shape": "spike",
+                "evidence": payload["events"][0]["evidence"],
+            }
+            for index in range(55)
+        ]
+        payload["infrastructure_events"] = [
+            {
+                "fingerprint": "k8s-pod-restart",
+                "reason": "Killing",
+                "objectKind": "Pod",
+                "objectName": "payments-abc",
+                "messageTemplate": "Container restarted",
+                "count": 2,
+                "firstSeen": "2026-08-10T12:00:00Z",
+                "lastSeen": "2026-08-10T12:01:00Z",
+                "evidence": [payload["events"][0]["evidence"]],
+            }
+        ]
+        payload["grafana_references"] = [
+            {
+                "dashboardUid": "payments-overview",
+                "panelId": 7,
+                "url": "https://grafana.example/d/payments-overview",
+                "variables": {"service": "payments"},
+                "evidence": payload["events"][0]["evidence"],
+            }
+        ]
+
+        status, built = _request(f"{base}/v1/contexts", method="POST", payload=payload, api_key="tenant-a-key")
+        assert status == 200
+        context_id = built["contextId"]
+        pattern_fingerprint = built["context"]["patterns"][0]["fingerprint"]
+
+        status, tools = _request(
+            f"{base}/mcp",
+            method="POST",
+            payload={"jsonrpc": "2.0", "id": "tools", "method": "tools/list"},
+            api_key="tenant-a-reader-key",
+        )
+        assert status == 200
+        names = {tool["name"] for tool in tools["result"]["tools"]}
+        assert {
+            "read_incident_timeline",
+            "list_incident_patterns",
+            "expand_incident_pattern",
+            "list_incident_correlations",
+            "list_incident_exceptions",
+            "list_metric_summaries",
+            "list_infrastructure_events",
+            "list_deployments",
+            "list_grafana_references",
+        }.issubset(names)
+
+        def call_tool(api_key, name, arguments):
+            return _request(
+                f"{base}/mcp",
+                method="POST",
+                payload={
+                    "jsonrpc": "2.0",
+                    "id": name,
+                    "method": "tools/call",
+                    "params": {"name": name, "arguments": arguments},
+                },
+                api_key=api_key,
+            )
+
+        status, metrics = call_tool("tenant-a-reader-key", "list_metric_summaries", {"context_id": context_id, "limit": 999})
+        assert status == 200
+        structured = metrics["result"]["structuredContent"]
+        assert structured["tenantId"] == "tenant-a"
+        assert structured["limit"] == 50
+        assert len(structured["items"]) == 50
+        assert structured["telemetry"] == {
+            "availableItems": 55,
+            "returnedItems": 50,
+            "truncated": True,
+        }
+        assert [item["id"] for item in structured["items"][:3]] == ["metric-0", "metric-1", "metric-2"]
+
+        status, pattern = call_tool(
+            "tenant-a-reader-key",
+            "expand_incident_pattern",
+            {"context_id": context_id, "fingerprint": pattern_fingerprint},
+        )
+        assert status == 200
+        assert pattern["result"]["structuredContent"]["items"][0]["fingerprint"] == pattern_fingerprint
+
+        for tool_name in (
+            "read_incident_timeline",
+            "list_incident_patterns",
+            "list_incident_correlations",
+            "list_incident_exceptions",
+            "list_infrastructure_events",
+            "list_deployments",
+            "list_grafana_references",
+        ):
+            status, body = call_tool("tenant-a-reader-key", tool_name, {"context_id": context_id, "limit": 5})
+            assert status == 200
+            assert body["result"]["structuredContent"]["tenantId"] == "tenant-a"
+
+        status, body = call_tool("tenant-b-key", "list_metric_summaries", {"context_id": context_id})
+        assert status == 404
+        assert body["error"]["code"] == "context_not_found"
+
+
+def test_reader_role_may_call_read_tools_but_build_remains_writer_only():
+    with _run_service_server(requests_per_minute=10) as server:
+        status, body = _request(
+            f"http://127.0.0.1:{server.server_port}/mcp",
+            method="POST",
+            payload={
+                "jsonrpc": "2.0",
+                "id": "build",
+                "method": "tools/call",
+                "params": {"name": "build_incident_context", "arguments": _incident_payload()},
+            },
+            api_key="tenant-a-reader-key",
+        )
+
+        assert status == 403
+        assert body["error"]["code"] == "insufficient_permissions"
+
+
+def test_build_rejects_credentials_in_grafana_references():
+    with _run_service_server(requests_per_minute=10, max_payload_bytes=10_000) as server:
+        payload = _incident_payload()
+        payload["grafana_references"] = [
+            {
+                "dashboardUid": "payments",
+                "url": "https://user:password@grafana.example/d/payments",
+                "variables": {"api_token": "secret"},
+                "evidence": payload["events"][0]["evidence"],
+            }
+        ]
+        status, body = _request(
+            f"http://127.0.0.1:{server.server_port}/v1/contexts",
+            method="POST",
+            payload=payload,
+            api_key="tenant-a-key",
+        )
+
+        assert status == 400
+        assert body["error"]["code"] == "bad_build_request"
+
+
 
 def test_http_and_mcp_invalid_request_return_validation_codes(service_server):
     status, body = _request(
@@ -361,5 +525,6 @@ def test_http_and_mcp_invalid_request_return_validation_codes(service_server):
         payload={"jsonrpc": "2.0", "id": "bad", "method": "tools/call", "params": {}},
         api_key="tenant-reader-key",
     )
-    assert status == 403
-    assert body["error"]["code"] == "insufficient_permissions"
+    assert status == 200
+    assert body["error"]["code"] == -32601
+    assert body["error"]["message"] == "Unknown tool"

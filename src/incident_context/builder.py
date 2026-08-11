@@ -80,12 +80,23 @@ class IncidentContextBuilder:
             + sum(pattern.estimated_tokens() for pattern in retained)
             + 20 * len(deltas)
             + 18 * len(timeline)
+            + 18 * len(request.metric_anomalies)
+            + 18 * len(request.infrastructure_events)
+            + 10 * len(request.grafana_references)
             + 24 * len(stack_fingerprints)
             + 16 * len(correlations)
         )
         input_tokens = sum(max(1, len(event.message) // 4) + 12 for event in request.events)
         observed_timestamps = [event.timestamp for event in request.events]
         observed_timestamps.extend(marker.timestamp for marker in request.deployment_markers)
+        observed_timestamps.extend(
+            datetime.fromisoformat(item.peak_at.replace("Z", "+00:00"))
+            for item in request.metric_anomalies
+        )
+        observed_timestamps.extend(
+            datetime.fromisoformat(item.last_seen.replace("Z", "+00:00"))
+            for item in request.infrastructure_events
+        )
         generated_at = (
             max(observed_timestamps, default=datetime.now(timezone.utc))
             .astimezone(timezone.utc)
@@ -107,6 +118,9 @@ class IncidentContextBuilder:
             deltas=tuple(deltas),
             sources=request.source_observations,
             timeline=tuple(timeline),
+            metric_anomalies=request.metric_anomalies,
+            infrastructure_events=request.infrastructure_events,
+            grafana_references=request.grafana_references,
             stack_fingerprints=tuple(stack_fingerprints),
             correlations=tuple(correlations),
             correlation_summary=correlation_summary,
@@ -293,6 +307,34 @@ class IncidentContextBuilder:
                     metadata=sanitize_fields(marker.metadata),
                     correlation_refs=(),
                     evidence=(evidence,),
+                )
+            )
+        for anomaly in request.metric_anomalies:
+            values.append(
+                TimelineEntry(
+                    timestamp=anomaly.start,
+                    kind="metric_anomaly",
+                    service=anomaly.service,
+                    summary=f"{anomaly.metric} {anomaly.state.lower()} ({anomaly.shape})",
+                    fingerprint=anomaly.anomaly_id,
+                    version=None,
+                    metadata={"baseline": anomaly.baseline, "peak": anomaly.peak},
+                    correlation_refs=(),
+                    evidence=anomaly.evidence,
+                )
+            )
+        for event in request.infrastructure_events:
+            values.append(
+                TimelineEntry(
+                    timestamp=event.first_seen,
+                    kind="infrastructure_event",
+                    service=event.object_name,
+                    summary=f"{event.reason}: {event.message_template}"[:240],
+                    fingerprint=event.fingerprint,
+                    version=None,
+                    metadata={"count": event.count, "objectKind": event.object_kind},
+                    correlation_refs=(),
+                    evidence=event.evidence,
                 )
             )
         for pattern in patterns:

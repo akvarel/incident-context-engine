@@ -3,6 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlparse
+
+
+_SENSITIVE_REFERENCE_MARKERS = ("authorization", "cookie", "password", "secret", "token", "api_key", "apikey")
+
+
+def _validate_aware_iso(value: str, field_name: str) -> None:
+    if not value.strip():
+        raise ValueError(f"{field_name} is required")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
 
 
 @dataclass(frozen=True)
@@ -53,6 +65,78 @@ class DeploymentMarker:
     evidence: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class MetricAnomaly:
+    anomaly_id: str
+    metric: str
+    service: str
+    state: str
+    baseline: float | None
+    peak: float
+    start: str
+    peak_at: str
+    shape: str
+    evidence: tuple[EvidenceRef, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.anomaly_id,
+            "metric": self.metric,
+            "service": self.service,
+            "state": self.state,
+            "baseline": self.baseline,
+            "peak": self.peak,
+            "start": self.start,
+            "peakAt": self.peak_at,
+            "shape": self.shape,
+            "evidence": [item.to_dict() for item in self.evidence],
+        }
+
+
+@dataclass(frozen=True)
+class InfrastructureEventGroup:
+    fingerprint: str
+    reason: str
+    object_kind: str
+    object_name: str
+    message_template: str
+    count: int
+    first_seen: str
+    last_seen: str
+    evidence: tuple[EvidenceRef, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fingerprint": self.fingerprint,
+            "reason": self.reason,
+            "objectKind": self.object_kind,
+            "objectName": self.object_name,
+            "messageTemplate": self.message_template,
+            "count": self.count,
+            "firstSeen": self.first_seen,
+            "lastSeen": self.last_seen,
+            "evidence": [item.to_dict() for item in self.evidence],
+        }
+
+
+@dataclass(frozen=True)
+class GrafanaReference:
+    dashboard_uid: str
+    panel_id: int | None
+    url: str
+    variables: tuple[tuple[str, str], ...]
+    evidence: EvidenceRef
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "dashboardUid": self.dashboard_uid,
+            "panelId": self.panel_id,
+            "url": self.url,
+            "variables": dict(self.variables),
+            "evidence": self.evidence.to_dict(),
+        }
+
+
 @dataclass
 class BuildRequest:
     scope: str
@@ -63,6 +147,9 @@ class BuildRequest:
     baseline_window_seconds: int | None = None
     source_observations: tuple["SourceObservation", ...] = ()
     deployment_markers: tuple[DeploymentMarker, ...] = ()
+    metric_anomalies: tuple[MetricAnomaly, ...] = ()
+    infrastructure_events: tuple[InfrastructureEventGroup, ...] = ()
+    grafana_references: tuple[GrafanaReference, ...] = ()
 
     def validate(self) -> None:
         if not self.scope.strip():
@@ -74,6 +161,32 @@ class BuildRequest:
                 raise ValueError("incident_window_seconds must be positive with a baseline")
             if not self.baseline_window_seconds or self.baseline_window_seconds < 1:
                 raise ValueError("baseline_window_seconds must be positive with a baseline")
+        for anomaly in self.metric_anomalies:
+            if not anomaly.anomaly_id.strip() or not anomaly.metric.strip() or not anomaly.service.strip():
+                raise ValueError("metric anomalies require id, metric, and service")
+            if anomaly.state not in {"SPIKE", "DROP", "STEP", "RISE", "OSCILLATION", "SUSTAINED", "ZERO", "CHANGED"}:
+                raise ValueError("metric anomaly state is unsupported")
+            _validate_aware_iso(anomaly.start, "metric anomaly start")
+            _validate_aware_iso(anomaly.peak_at, "metric anomaly peak_at")
+            if not anomaly.evidence:
+                raise ValueError("metric anomalies require evidence")
+        for event in self.infrastructure_events:
+            if not event.fingerprint.strip() or not event.reason.strip() or not event.object_name.strip():
+                raise ValueError("infrastructure events require fingerprint, reason, and object name")
+            _validate_aware_iso(event.first_seen, "infrastructure event first_seen")
+            _validate_aware_iso(event.last_seen, "infrastructure event last_seen")
+            if event.count < 1 or not event.evidence:
+                raise ValueError("infrastructure events require a positive count and evidence")
+        for reference in self.grafana_references:
+            parsed = urlparse(reference.url)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                raise ValueError("Grafana references require an absolute URL")
+            if parsed.username or parsed.password:
+                raise ValueError("Grafana reference URLs must not contain credentials")
+            for key, value in reference.variables:
+                combined = f"{key} {value}".lower()
+                if any(marker in combined for marker in _SENSITIVE_REFERENCE_MARKERS):
+                    raise ValueError("Grafana reference variables must not contain credentials")
 
 
 @dataclass(frozen=True)
@@ -285,6 +398,9 @@ class IncidentContext:
     deltas: tuple[PatternDelta, ...]
     sources: tuple[SourceObservation, ...]
     timeline: tuple[TimelineEntry, ...]
+    metric_anomalies: tuple[MetricAnomaly, ...]
+    infrastructure_events: tuple[InfrastructureEventGroup, ...]
+    grafana_references: tuple[GrafanaReference, ...]
     stack_fingerprints: tuple[StackFingerprint, ...]
     correlations: tuple[CorrelationGroup, ...]
     correlation_summary: CorrelationSummary
@@ -305,6 +421,9 @@ class IncidentContext:
             "sources": [source.to_dict() for source in self.sources],
             "sourceQueries": sum(source.query_count for source in self.sources),
             "timeline": [item.to_dict() for item in self.timeline],
+            "metricAnomalies": [item.to_dict() for item in self.metric_anomalies],
+            "infrastructureEvents": [item.to_dict() for item in self.infrastructure_events],
+            "grafanaReferences": [item.to_dict() for item in self.grafana_references],
             "stackFingerprints": [item.to_dict() for item in self.stack_fingerprints],
             "correlations": [item.to_dict() for item in self.correlations],
             "correlationSummary": self.correlation_summary.to_dict(),

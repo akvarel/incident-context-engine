@@ -96,6 +96,9 @@ def test_compile_l0_contains_only_summary_and_state():
     assert published.stack_fingerprints == ()
     assert published.correlations == ()
     assert published.deltas == ()
+    assert published.metric_anomalies == ()
+    assert published.infrastructure_events == ()
+    assert published.grafana_references == ()
     assert published.hypotheses == ()
     assert published.state.requested_level == "L0"
     assert published.state.emitted_level == "L0"
@@ -108,6 +111,9 @@ def test_compile_l0_contains_only_summary_and_state():
         "stack_fingerprints",
         "correlations",
         "deltas",
+        "metric_anomalies",
+        "infrastructure_events",
+        "grafana_references",
         "hypotheses",
     ]
 
@@ -211,6 +217,9 @@ def test_operation_summary_is_stable_under_tight_expansion_budget():
         "stack_fingerprints",
         "correlations",
         "deltas",
+        "metric_anomalies",
+        "infrastructure_events",
+        "grafana_references",
         "hypotheses",
     ]
     state_payload = published.state.to_dict()
