@@ -7,7 +7,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping, Protocol
-from urllib.parse import urlencode, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from .models import LogEvent
@@ -48,12 +49,74 @@ class UrllibJsonTransport:
 
 
 @dataclass(frozen=True)
+class TextResponse:
+    body: str
+    headers: Mapping[str, str]
+
+
+class TextTransport(Protocol):
+    def get_text(
+        self,
+        url: str,
+        *,
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+        max_response_bytes: int,
+    ) -> TextResponse: ...
+
+
+class JenkinsTransportError(RuntimeError):
+    """Bounded Jenkins HTTP failure that never carries response content."""
+
+
+class UrllibTextTransport:
+    def get_text(
+        self,
+        url: str,
+        *,
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+        max_response_bytes: int,
+    ) -> TextResponse:
+        request = Request(url, headers=dict(headers), method="GET")
+        try:
+            with urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310
+                payload = response.read(max_response_bytes + 1)
+                response_headers = {key: value for key, value in response.headers.items()}
+        except HTTPError as error:
+            raise JenkinsTransportError(
+                f"Jenkins HTTP request failed with status {error.code}"
+            ) from None
+        except TimeoutError:
+            raise JenkinsTransportError("Jenkins HTTP request timed out") from None
+        except (URLError, OSError):
+            raise JenkinsTransportError("Jenkins HTTP request failed") from None
+        if len(payload) > max_response_bytes:
+            raise JenkinsTransportError(
+                "Jenkins text response exceeds configured byte limit"
+            )
+        return TextResponse(
+            body=payload.decode("utf-8", errors="replace"),
+            headers=response_headers,
+        )
+
+
+@dataclass(frozen=True)
 class AdapterLimits:
     max_window: timedelta = timedelta(hours=6)
     max_log_lines: int = 500
     max_metric_points: int = 2_000
     request_timeout_seconds: float = 10.0
     max_response_bytes: int = 5_000_000
+    max_log_bytes: int = 5_000_000
+    max_requests: int = 100
+    max_chunks: int = 100
+
+    def __post_init__(self) -> None:
+        for name in ("max_log_bytes", "max_requests", "max_chunks"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
 
 
 @dataclass(frozen=True)
@@ -72,6 +135,14 @@ class PrometheusQuery:
     start: datetime
     end: datetime
     step_seconds: int = 15
+
+
+@dataclass(frozen=True)
+class JenkinsQuery:
+    job: str
+    build: int
+    service: str | None = None
+    limit: int = 500
 
 
 @dataclass(frozen=True)
@@ -324,3 +395,235 @@ class PrometheusAdapter(_BaseAdapter):
             query_count=1,
             scanned_items=scanned,
         )
+
+
+class JenkinsAdapter(_BaseAdapter):
+    """Bounded, read-only client for Jenkins progressive build console output.
+
+    The adapter fetches deterministic build metadata from ``/api/json`` and the
+    console text from ``/logText/progressiveText`` in bounded chunks. The next
+    chunk offset always comes from the numeric ``X-Text-Size`` response header;
+    ``X-More-Data`` is honored case-insensitively. Every budget exhaustion or
+    protocol violation is reported through an explicit incomplete reason instead
+    of silent truncation, and the loop always terminates.
+    """
+
+    _TIMESTAMPER = re.compile(
+        r"^(?P<stamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2}))"
+    )
+
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        transport: JsonTransport | None = None,
+        text_transport: TextTransport | None = None,
+        limits: AdapterLimits | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
+        super().__init__(base_url, transport=transport, limits=limits, headers=headers)
+        self._text_transport = text_transport or UrllibTextTransport()
+
+    def query(self, query: JenkinsQuery) -> LogQueryResult:
+        segments = self._validate_job(query.job)
+        self._validate_build(query.build)
+        if query.limit < 1 or query.limit > self._limits.max_log_lines:
+            raise ValueError("Jenkins line limit exceeds configured maximum")
+        encoded = "/job/" + "/job/".join(quote(segment, safe="") for segment in segments)
+        query_ref = self._query_ref(
+            "jenkins",
+            "/jenkins/console",
+            {"job": query.job, "build": str(query.build), "limit": str(query.limit)},
+        )
+
+        requests = 1
+        try:
+            metadata = self._transport.get_json(
+                f"{self._base_url}{encoded}/{query.build}/api/json",
+                headers=self._headers,
+                timeout_seconds=self._limits.request_timeout_seconds,
+                max_response_bytes=self._limits.max_response_bytes,
+            )
+        except JenkinsTransportError:
+            raise
+        except Exception:
+            raise JenkinsTransportError("Jenkins build metadata request failed") from None
+        build_start = self._build_start(metadata, query.build)
+        result = metadata.get("result")
+        if result is not None and not isinstance(result, str):
+            raise RuntimeError("Jenkins build metadata is malformed")
+        building = metadata.get("building", False)
+        if not isinstance(building, bool):
+            raise RuntimeError("Jenkins build metadata is malformed")
+
+        service = query.service or segments[-1]
+        cursor = build_start
+        events: list[LogEvent] = []
+        buffer = ""
+        total_bytes = 0
+        offset = 0
+        chunks = 0
+        complete = False
+        incomplete_reason: str | None = None
+
+        def emit(line: str) -> None:
+            nonlocal cursor
+            parsed = self._parse_timestamper(line)
+            if parsed is not None:
+                stamp, message = parsed
+                stamp = max(stamp, cursor)
+            else:
+                cursor = cursor + timedelta(microseconds=1)
+                stamp = cursor
+                message = line
+            cursor = stamp
+            events.append(
+                LogEvent(
+                    timestamp=stamp,
+                    service=service,
+                    severity=self._severity(message),
+                    message=message,
+                    fields={
+                        "job": query.job,
+                        "build": query.build,
+                        "result": result,
+                        "building": building,
+                    },
+                    evidence={
+                        "source": "jenkins",
+                        "query_ref": query_ref,
+                        "start": self._iso(build_start),
+                        "end": self._iso(build_start),
+                        "job": query.job,
+                        "build": query.build,
+                        "result": result,
+                        "building": building,
+                    },
+                )
+            )
+
+        while True:
+            if requests >= self._limits.max_requests:
+                incomplete_reason = "request_limit_reached"
+                break
+            if chunks >= self._limits.max_chunks:
+                incomplete_reason = "chunk_limit_reached"
+                break
+            try:
+                response = self._text_transport.get_text(
+                    f"{self._base_url}{encoded}/{query.build}/logText/progressiveText?start={offset}",
+                    headers=self._headers,
+                    timeout_seconds=self._limits.request_timeout_seconds,
+                    max_response_bytes=self._limits.max_response_bytes,
+                )
+            except JenkinsTransportError:
+                raise
+            except Exception:
+                raise JenkinsTransportError("Jenkins console retrieval failed") from None
+            requests += 1
+            chunks += 1
+            total_bytes += len(response.body.encode("utf-8", errors="replace"))
+            buffer += response.body
+            while "\n" in buffer:
+                line, buffer = buffer.split("\n", 1)
+                emit(line.rstrip("\r"))
+                if len(events) >= query.limit:
+                    break
+            if len(events) >= query.limit:
+                incomplete_reason = "limit_reached"
+                break
+            if total_bytes > self._limits.max_log_bytes:
+                incomplete_reason = "byte_limit_reached"
+                break
+            more = self._header_value(response.headers, "X-More-Data")
+            if more is None or more.strip().lower() != "true":
+                complete = True
+                break
+            size_raw = self._header_value(response.headers, "X-Text-Size")
+            if size_raw is None or not size_raw.strip().isdigit():
+                incomplete_reason = "invalid_offset"
+                break
+            size = int(size_raw)
+            if size <= offset:
+                incomplete_reason = "offset_stalled"
+                break
+            offset = size
+
+        if buffer.strip() and len(events) < query.limit:
+            emit(buffer.rstrip("\r"))
+
+        return LogQueryResult(
+            query_ref=query_ref,
+            events=tuple(events),
+            complete=complete,
+            incomplete_reason=incomplete_reason,
+            query_count=requests,
+            scanned_items=len(events),
+        )
+
+    @staticmethod
+    def _validate_job(job: str) -> list[str]:
+        if not job or not isinstance(job, str):
+            raise ValueError("Jenkins job name is required")
+        segments = job.split("/")
+        for segment in segments:
+            if not segment:
+                raise ValueError("Jenkins job name contains an empty segment")
+            if segment in {".", ".."}:
+                raise ValueError("Jenkins job name contains an unsafe segment")
+            if any(ord(character) < 32 or ord(character) == 127 for character in segment):
+                raise ValueError("Jenkins job name contains control characters")
+            if any(character in segment for character in ("?", "#")):
+                raise ValueError("Jenkins job name contains query or fragment characters")
+        return segments
+
+    @staticmethod
+    def _validate_build(build: int) -> None:
+        if isinstance(build, bool) or not isinstance(build, int) or build < 1:
+            raise ValueError("Jenkins build number must be a positive integer")
+
+    @staticmethod
+    def _build_start(metadata: Mapping[str, Any], build: int) -> datetime:
+        raw = metadata.get("timestamp")
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            raise RuntimeError("Jenkins build metadata is malformed")
+        if raw <= 0 or math.isnan(raw) or math.isinf(raw):
+            raise RuntimeError("Jenkins build metadata is malformed")
+        number = metadata.get("number")
+        if number is not None and (isinstance(number, bool) or number != build):
+            raise RuntimeError("Jenkins build metadata is malformed")
+        return datetime.fromtimestamp(raw / 1000, tz=timezone.utc)
+
+    @classmethod
+    def _parse_timestamper(cls, line: str) -> tuple[datetime, str] | None:
+        match = cls._TIMESTAMPER.match(line)
+        if not match:
+            return None
+        raw = match.group("stamp")
+        normalized = raw.replace("Z", "+00:00")
+        if re.search(r"[+-]\d{4}$", normalized):
+            normalized = f"{normalized[:-2]}:{normalized[-2:]}"
+        try:
+            stamp = datetime.fromisoformat(normalized)
+        except ValueError:
+            return None
+        if stamp.tzinfo is None:
+            return None
+        return stamp.astimezone(timezone.utc), line[match.end() :].lstrip()
+
+    @staticmethod
+    def _iso(value: datetime) -> str:
+        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    @staticmethod
+    def _header_value(headers: Mapping[str, str], name: str) -> str | None:
+        target = name.lower()
+        for key, value in headers.items():
+            if str(key).lower() == target:
+                return str(value)
+        return None
+
+    @staticmethod
+    def _severity(message: str) -> str:
+        match = _SEVERITY.search(message)
+        return match.group(1) if match else "INFO"

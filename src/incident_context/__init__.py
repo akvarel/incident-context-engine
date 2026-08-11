@@ -1,9 +1,14 @@
 from .adapters import (
     AdapterLimits,
+    JenkinsAdapter,
+    JenkinsQuery,
+    JenkinsTransportError,
     LokiAdapter,
     LokiQuery,
     PrometheusAdapter,
     PrometheusQuery,
+    TextResponse,
+    UrllibTextTransport,
 )
 from .builder import IncidentContextBuilder
 from .context_compiler import (
@@ -114,6 +119,11 @@ __all__ = [
     "InvestigationState",
     "JcodeContextCompiler",
     "IncidentContextPipeline",
+    "JenkinsAdapter",
+    "JenkinsQuery",
+    "JenkinsTransportError",
+    "TextResponse",
+    "UrllibTextTransport",
     "AlertSeed",
     "CacheTelemetry",
     "CardinalityFinding",

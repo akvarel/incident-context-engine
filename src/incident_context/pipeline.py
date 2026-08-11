@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 
 from .adapters import (
+    JenkinsAdapter,
+    JenkinsQuery,
     LogQueryResult,
     LokiAdapter,
     LokiQuery,
@@ -26,10 +28,12 @@ class IncidentContextPipeline:
         *,
         loki: LokiAdapter,
         prometheus: PrometheusAdapter | None = None,
+        jenkins: JenkinsAdapter | None = None,
         builder: IncidentContextBuilder | None = None,
     ) -> None:
         self._loki = loki
         self._prometheus = prometheus
+        self._jenkins = jenkins
         self._builder = builder or IncidentContextBuilder()
 
     def build_from_loki(
@@ -64,6 +68,35 @@ class IncidentContextPipeline:
                 else None,
                 baseline_window_seconds=baseline_window_seconds,
                 source_observations=tuple(source_observations),
+            )
+        )
+
+    def build_from_jenkins(
+        self,
+        *,
+        scope: str,
+        token_budget: int,
+        jenkins_query: JenkinsQuery,
+    ) -> IncidentContext:
+        if self._jenkins is None:
+            raise ValueError("Jenkins adapter is required for Jenkins builds")
+        result = self._jenkins.query(jenkins_query)
+        return self._builder.build(
+            BuildRequest(
+                scope=scope,
+                token_budget=token_budget,
+                events=list(result.events),
+                source_observations=(
+                    SourceObservation(
+                        source="jenkins",
+                        query_ref=result.query_ref,
+                        complete=result.complete,
+                        incomplete_reason=result.incomplete_reason,
+                        query_count=result.query_count,
+                        scanned_items=result.scanned_items,
+                        retained_items=len(result.events),
+                    ),
+                ),
             )
         )
 

@@ -5,6 +5,7 @@ These tests are written first (RED phase): they fail during collection until
 """
 
 import json
+import re
 import socket
 import threading
 from datetime import datetime, timedelta, timezone
@@ -30,7 +31,6 @@ BUILD_START_MS = int(BUILD_START.timestamp() * 1000)
 def _metadata(**overrides):
     value = {
         "timestamp": BUILD_START_MS,
-        "number": 42,
         "result": "SUCCESS",
         "building": False,
     }
@@ -66,7 +66,8 @@ class FakeJenkins:
         self.text_calls.append((url, dict(headers), timeout_seconds, max_response_bytes))
         if self.text_exception is not None:
             raise self.text_exception
-        return self.text_responses[len(self.text_calls) - 1]
+        index = min(len(self.text_calls) - 1, len(self.text_responses) - 1)
+        return self.text_responses[index]
 
 
 class RecordingTransport:
@@ -100,7 +101,7 @@ def _empty_loki():
 
 def test_jenkins_metadata_and_progressive_chunks_with_nested_job_url_encoding():
     fake = FakeJenkins(
-        _metadata(),
+        _metadata(number=42),
         [
             TextResponse(body="ERROR first failure\n", headers={"X-Text-Size": "19", "X-More-Data": "true"}),
             TextResponse(body="INFO second line\n", headers={"X-Text-Size": "34", "X-More-Data": "false"}),
@@ -536,9 +537,10 @@ def test_jenkins_query_ref_is_deterministic_and_opaque():
     assert first.query_ref == other_host.query_ref
     assert first.events == second.events
     assert first.query_ref.startswith("JENKINS-")
+    assert re.fullmatch(r"JENKINS-[0-9a-f]{16}", first.query_ref)
     assert "Folder" not in first.query_ref
     assert "Job" not in first.query_ref
-    assert "jenkins" not in first.query_ref.lower()
+    assert "example.com" not in first.query_ref
 
     different = adapter.query(JenkinsQuery(job="Folder/Job", build=43, limit=50))
     assert different.query_ref != first.query_ref
