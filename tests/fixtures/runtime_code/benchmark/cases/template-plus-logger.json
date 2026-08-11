@@ -1,0 +1,100 @@
+{
+  "anchors": [
+    {
+      "canonicalTemplate": "request accepted for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921",
+      "id": "anchor:e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921",
+      "kind": "LOG_TEMPLATE",
+      "logger": "OrderService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 10,
+        "framework": "typescript",
+        "graphNodeId": "fn_create_order",
+        "language": "typescript",
+        "logger": "OrderService",
+        "ownerSymbol": "createOrder()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/orders/create.ts",
+        "startLine": 10
+      },
+      "static": true
+    },
+    {
+      "canonicalTemplate": "request accepted for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921",
+      "id": "anchor:e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921",
+      "kind": "LOG_TEMPLATE",
+      "logger": "ValidationService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 20,
+        "framework": "typescript",
+        "graphNodeId": "fn_validate_order",
+        "language": "typescript",
+        "logger": "ValidationService",
+        "ownerSymbol": "validateOrder()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/orders/validate.ts",
+        "startLine": 20
+      },
+      "static": true
+    }
+  ],
+  "category": "template-plus-logger",
+  "description": "A duplicated template is disambiguated by the structured logger name; the matcher must resolve to the logger-owned callsite.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-1",
+      "kind": "LOG_PATTERN",
+      "logger": "OrderService",
+      "normalizedTemplate": "request accepted for <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "e10d59f1db6a3e401cbe4fce19bc5f34275f1a567bf63162292cf83e46ffe921"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 10,
+        "file": "src/orders/create.ts",
+        "startLine": 10
+      }
+    ],
+    "primaryEvidenceId": "ev-1",
+    "status": "MATCHED",
+    "symbols": [
+      "createOrder()"
+    ]
+  },
+  "id": "template-plus-logger",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

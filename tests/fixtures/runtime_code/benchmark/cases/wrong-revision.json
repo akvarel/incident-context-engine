@@ -1,0 +1,81 @@
+{
+  "anchors": [
+    {
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "exceptionType": "SyncTimeoutError",
+      "fingerprint": "27656a5bede9eaefdde7a3bc71b3487722bd74967e41d75165153528efe6e37c",
+      "id": "anchor:27656a5bede9eaefdde7a3bc71b3487722bd74967e41d75165153528efe6e37c",
+      "kind": "EXCEPTION_THROW",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "27656a5bede9eaefdde7a3bc71b3487722bd74967e41d75165153528efe6e37c",
+        "anchorKind": "EXCEPTION_THROW",
+        "endLine": 55,
+        "framework": "typescript",
+        "graphNodeId": "fn_sync_inventory",
+        "language": "typescript",
+        "logger": "InventorySync",
+        "ownerSymbol": "syncInventory()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/inventory/sync.ts",
+        "startLine": 55
+      },
+      "static": false
+    }
+  ],
+  "category": "wrong-revision",
+  "description": "The deployed revision is not the resolved graph revision; the matcher must resolve against the nearest known revision at MEDIUM confidence and must never claim EXACT line evidence.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "sentry:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "exceptionType": "SyncTimeoutError",
+      "id": "ev-1",
+      "kind": "EXCEPTION",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "stackFrames": [
+        {
+          "file": "src/inventory/sync.ts",
+          "function": "syncInventory",
+          "line": 55
+        }
+      ],
+      "start": "2026-08-11T12:00:00Z"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 55,
+        "file": "src/inventory/sync.ts",
+        "startLine": 55
+      }
+    ],
+    "primaryEvidenceId": "ev-1",
+    "status": "DEGRADED_REVISION",
+    "symbols": [
+      "syncInventory",
+      "syncInventory()"
+    ]
+  },
+  "id": "wrong-revision",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "60303ae22b998861bce3b28f33ec1be758a213c86c93c076dbe9f558c11c752",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "NEAREST_KNOWN"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

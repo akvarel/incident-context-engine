@@ -1,0 +1,121 @@
+{
+  "anchors": [
+    {
+      "canonicalTemplate": "queue publish failed for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "7601aff133ff6ec87924aac32796628195515cae9393790d55ac85b3f8a63987",
+      "id": "anchor:7601aff133ff6ec87924aac32796628195515cae9393790d55ac85b3f8a63987",
+      "kind": "LOG_TEMPLATE",
+      "logger": "QueueService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "7601aff133ff6ec87924aac32796628195515cae9393790d55ac85b3f8a63987",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 8,
+        "framework": "typescript",
+        "graphNodeId": "fn_publish_to_queue",
+        "language": "typescript",
+        "logger": "QueueService",
+        "ownerSymbol": "publishToQueue()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/queue/publish.ts",
+        "startLine": 8
+      },
+      "static": true
+    },
+    {
+      "canonicalTemplate": "document render failed for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "4a3afb91dcfd0462a1a2884145cb55e058de697cbf67652bf0cd1c01f0140113",
+      "id": "anchor:4a3afb91dcfd0462a1a2884145cb55e058de697cbf67652bf0cd1c01f0140113",
+      "kind": "LOG_TEMPLATE",
+      "logger": "RenderService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "4a3afb91dcfd0462a1a2884145cb55e058de697cbf67652bf0cd1c01f0140113",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 14,
+        "framework": "typescript",
+        "graphNodeId": "fn_render_document",
+        "language": "typescript",
+        "logger": "RenderService",
+        "ownerSymbol": "renderDocument()",
+        "repository": "avion-inventory",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/render/document.ts",
+        "startLine": 14
+      },
+      "static": true
+    }
+  ],
+  "category": "multi-repository",
+  "description": "One incident carries evidence from two repositories; each evidence item must be correlated under its own repository scope and both must resolve without cross-repository leakage.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-a",
+      "kind": "LOG_PATTERN",
+      "logger": "QueueService",
+      "normalizedTemplate": "queue publish failed for <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "7601aff133ff6ec87924aac32796628195515cae9393790d55ac85b3f8a63987"
+    },
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-b",
+      "kind": "LOG_PATTERN",
+      "logger": "RenderService",
+      "normalizedTemplate": "document render failed for <arg>",
+      "repository": "avion-inventory",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "4a3afb91dcfd0462a1a2884145cb55e058de697cbf67652bf0cd1c01f0140113"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 8,
+        "file": "src/queue/publish.ts",
+        "startLine": 8
+      }
+    ],
+    "primaryEvidenceId": "ev-a",
+    "status": "MATCHED",
+    "symbols": [
+      "publishToQueue()"
+    ]
+  },
+  "id": "multi-repository",
+  "relations": [],
+  "repositories": {
+    "avion-inventory": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    },
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

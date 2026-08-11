@@ -1,0 +1,92 @@
+{
+  "anchors": [
+    {
+      "canonicalTemplate": "inventory reservation failed for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "03b6d255c06013569b09d007d1de3df3340a2f4b158ce95416400b17473c9d06",
+      "id": "anchor:03b6d255c06013569b09d007d1de3df3340a2f4b158ce95416400b17473c9d06",
+      "kind": "LOG_TEMPLATE",
+      "logger": "InventoryService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "03b6d255c06013569b09d007d1de3df3340a2f4b158ce95416400b17473c9d06",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 40,
+        "framework": "typescript",
+        "graphNodeId": "fn_reserve_inventory",
+        "language": "typescript",
+        "logger": "InventoryService",
+        "ownerSymbol": "reserveInventory()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/inventory/reserve.ts",
+        "startLine": 40
+      },
+      "static": true
+    },
+    {
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "c905c8f08a1499e9b463ecea7aeb840e365c4afe77b00e450fed05de9b5f6257",
+      "id": "anchor:c905c8f08a1499e9b463ecea7aeb840e365c4afe77b00e450fed05de9b5f6257",
+      "kind": "LOGGER",
+      "logger": "PaymentService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "c905c8f08a1499e9b463ecea7aeb840e365c4afe77b00e450fed05de9b5f6257",
+        "anchorKind": "LOGGER",
+        "endLine": 60,
+        "framework": "typescript",
+        "graphNodeId": "fn_reserve_payment",
+        "language": "typescript",
+        "logger": "PaymentService",
+        "ownerSymbol": "reservePayment()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/payments/reserve.ts",
+        "startLine": 60
+      },
+      "static": false
+    }
+  ],
+  "category": "contradictory-signals",
+  "description": "The template points at one symbol while the logger points at another; the material contradiction must surface, must prevent any HIGH/EXACT confidence claim, and must leave the case AMBIGUOUS so the proxy abstains instead of guessing.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-1",
+      "kind": "LOG_PATTERN",
+      "logger": "PaymentService",
+      "normalizedTemplate": "inventory reservation failed for <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "03b6d255c06013569b09d007d1de3df3340a2f4b158ce95416400b17473c9d06"
+    }
+  ],
+  "expected": {
+    "locations": [],
+    "mustAbstain": true,
+    "primaryEvidenceId": "ev-1",
+    "status": "AMBIGUOUS",
+    "symbols": []
+  },
+  "id": "contradictory-signals",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

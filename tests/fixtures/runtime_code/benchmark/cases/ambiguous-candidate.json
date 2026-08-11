@@ -1,0 +1,93 @@
+{
+  "anchors": [
+    {
+      "canonicalTemplate": "reserve started for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352",
+      "id": "anchor:d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352",
+      "kind": "LOG_TEMPLATE",
+      "logger": "ServiceA",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 5,
+        "framework": "typescript",
+        "graphNodeId": "fn_reserve_a",
+        "language": "typescript",
+        "logger": "ServiceA",
+        "ownerSymbol": "reserveA()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/reserve/a.ts",
+        "startLine": 5
+      },
+      "static": true
+    },
+    {
+      "canonicalTemplate": "reserve started for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352",
+      "id": "anchor:d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352",
+      "kind": "LOG_TEMPLATE",
+      "logger": "ServiceA",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 9,
+        "framework": "typescript",
+        "graphNodeId": "fn_reserve_b",
+        "language": "typescript",
+        "logger": "ServiceA",
+        "ownerSymbol": "reserveB()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/reserve/b.ts",
+        "startLine": 9
+      },
+      "static": true
+    }
+  ],
+  "category": "ambiguous-candidate",
+  "description": "Two close-scoring candidates remain plausible; the matcher must stay AMBIGUOUS and the proxy must abstain instead of silently collapsing the ambiguity to one winner.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-1",
+      "kind": "LOG_PATTERN",
+      "logger": "ServiceA",
+      "normalizedTemplate": "reserve started for <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "d8528af3988328165873a5fd3842da20cfdbf82be51ff548a6852ad3c81db352"
+    }
+  ],
+  "expected": {
+    "locations": [],
+    "mustAbstain": true,
+    "primaryEvidenceId": "ev-1",
+    "status": "AMBIGUOUS",
+    "symbols": []
+  },
+  "id": "ambiguous-candidate",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

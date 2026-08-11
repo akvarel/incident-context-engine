@@ -1,0 +1,102 @@
+{
+  "anchors": [
+    {
+      "canonicalTemplate": "payment failed for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "ae26e788ff5e41c506f03cb4c78cd0f6b820e9fed431cee27a1c4ae03412406f",
+      "id": "anchor:ae26e788ff5e41c506f03cb4c78cd0f6b820e9fed431cee27a1c4ae03412406f",
+      "kind": "LOG_TEMPLATE",
+      "logger": "PaymentService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "ae26e788ff5e41c506f03cb4c78cd0f6b820e9fed431cee27a1c4ae03412406f",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 42,
+        "framework": "typescript",
+        "graphNodeId": "fn_charge",
+        "language": "typescript",
+        "logger": "PaymentService",
+        "ownerSymbol": "charge()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/paymentService.ts",
+        "startLine": 42
+      },
+      "static": true
+    }
+  ],
+  "category": "exact-stack",
+  "description": "An exception stack frame resolves exactly to one callsite; the matcher must reach EXACT confidence and the graph neighborhood must cover the remaining frame file.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "sentry:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "exceptionType": "TimeoutError",
+      "id": "ev-1",
+      "kind": "EXCEPTION",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "stackFrames": [
+        {
+          "file": "src/paymentService.ts",
+          "function": "charge",
+          "line": 42
+        },
+        {
+          "file": "src/helpers/http.ts",
+          "function": "fetchWithTimeout",
+          "line": 7
+        }
+      ],
+      "start": "2026-08-11T12:00:00Z"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 42,
+        "file": "src/paymentService.ts",
+        "startLine": 42
+      }
+    ],
+    "primaryEvidenceId": "ev-1",
+    "status": "MATCHED",
+    "symbols": [
+      "charge",
+      "charge()"
+    ]
+  },
+  "id": "exact-stack",
+  "relations": [
+    {
+      "record": {
+        "endLine": 7,
+        "relatedGraphNodeId": "fn_fetch",
+        "relatedSymbol": "fetchWithTimeout()",
+        "relation": "calls",
+        "sourceFile": "src/helpers/http.ts",
+        "sourceGraphNodeId": "fn_charge",
+        "startLine": 7
+      },
+      "relation": "calls",
+      "repository": "avion-payments",
+      "sourceNodeId": "fn_charge"
+    }
+  ],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

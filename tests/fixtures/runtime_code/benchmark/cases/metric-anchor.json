@@ -1,0 +1,73 @@
+{
+  "anchors": [
+    {
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "3eabbb1b0640c4821168b5bda2f5828c94f63b6378aa11b51fd2baf7573df10c",
+      "id": "anchor:3eabbb1b0640c4821168b5bda2f5828c94f63b6378aa11b51fd2baf7573df10c",
+      "kind": "METRIC",
+      "metricName": "payments.latency_p99",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "3eabbb1b0640c4821168b5bda2f5828c94f63b6378aa11b51fd2baf7573df10c",
+        "anchorKind": "METRIC",
+        "endLine": 9,
+        "framework": "typescript",
+        "graphNodeId": "fn_observe_payment_latency",
+        "language": "typescript",
+        "logger": null,
+        "ownerSymbol": "observePaymentLatency()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/metrics/paymentMetrics.ts",
+        "startLine": 9
+      },
+      "static": false
+    }
+  ],
+  "category": "metric-anchor",
+  "description": "A metric anomaly maps to the source metric anchor and its owning symbol at HIGH confidence.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "prometheus:payments.latency_p99:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-1",
+      "kind": "METRIC_ANOMALY",
+      "metricName": "payments.latency_p99",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "critical",
+      "start": "2026-08-11T12:00:00Z"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 9,
+        "file": "src/metrics/paymentMetrics.ts",
+        "startLine": 9
+      }
+    ],
+    "primaryEvidenceId": "ev-1",
+    "status": "MATCHED",
+    "symbols": [
+      "observePaymentLatency()"
+    ]
+  },
+  "id": "metric-anchor",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

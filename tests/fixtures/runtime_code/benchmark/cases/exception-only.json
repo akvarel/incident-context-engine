@@ -1,0 +1,74 @@
+{
+  "anchors": [
+    {
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "exceptionType": "PaymentGatewayUnreachable",
+      "fingerprint": "529aaa8292f548aa27ef8bb118f196a4feda8c99a18b44c5ad1d70bde2c80efe",
+      "id": "anchor:529aaa8292f548aa27ef8bb118f196a4feda8c99a18b44c5ad1d70bde2c80efe",
+      "kind": "EXCEPTION_THROW",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "529aaa8292f548aa27ef8bb118f196a4feda8c99a18b44c5ad1d70bde2c80efe",
+        "anchorKind": "EXCEPTION_THROW",
+        "endLine": 33,
+        "framework": "typescript",
+        "graphNodeId": "fn_payment_gateway_send",
+        "language": "typescript",
+        "logger": "PaymentGatewayClient",
+        "ownerSymbol": "PaymentGatewayClient.send()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/gateway/client.ts",
+        "startLine": 33
+      },
+      "static": false
+    }
+  ],
+  "category": "exception-only",
+  "description": "Only the exception type is known (no stack frames); the matcher must resolve the owning symbol through the exception relation at MEDIUM confidence without fabricating a line-level claim.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "sentry:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "exceptionType": "PaymentGatewayUnreachable",
+      "id": "ev-1",
+      "kind": "EXCEPTION",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "stackFrames": [],
+      "start": "2026-08-11T12:00:00Z"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 33,
+        "file": "src/gateway/client.ts",
+        "startLine": 33
+      }
+    ],
+    "primaryEvidenceId": "ev-1",
+    "status": "MATCHED",
+    "symbols": [
+      "PaymentGatewayClient.send()"
+    ]
+  },
+  "id": "exception-only",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

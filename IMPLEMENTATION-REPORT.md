@@ -181,3 +181,82 @@ Not pushed; commit body carries `AI-assisted: Jcode`.
   today.
 - Absolute local environment paths were scrubbed from docs/docstrings; the
   Graphify schema facts remain cited by commit hash.
+
+---
+
+# Gate 6: deterministic A/B benchmark harness
+
+Branch: `feature/runtime-code-correlation`
+Date: 2026-08-11
+
+## Scope
+
+Gate 6 from `bugzero-runtime-to-code-correlation-plan.md` (sections 21-24 and
+the "Gate 6 — A/B benchmark" review gate) ships here as the OSS, reproducible,
+**deterministic-proxy** half of the evaluation. No LLM is invoked and no LLM
+quality is claimed: the proxy agent reads the context payload and answers the
+code-symbol/source-location question, abstaining honestly on unresolved and
+ambiguous cases. The live-agent A/B (correct root cause, correct fix,
+time-to-diagnosis, tool calls, raw-log expansions, real token billing) is
+documented for BugZero in `docs/runtime-code-correlation/gate6-ab-benchmark.md`
+and runs later on the same OSS-safe fixtures without customer data.
+
+## New modules and files
+
+| Path | Content |
+| --- | --- |
+| `src/incident_context/runtime_code/benchmark_metrics.py` | Pure deterministic metric records and calculations: `ProxyCandidate`/`ProxyAnswer`/`ArmOutcome`/`CaseOutcome`, `compute_benchmark_metrics`, `check_regression_thresholds`, `REGRESSION_THRESHOLDS`, token proxy, Markdown renderer. No pipeline dependency; unit-tested with synthetic records. |
+| `src/incident_context/runtime_code/benchmark.py` | Harness: `runtime-code-benchmark-case/v1` fixture loader, per-repository scoped correlation runner, deterministic proxy investigator, baseline vs correlated contexts, per-case work accounting (searches/file reads), tenant-leak and wrong-revision invariant checks, JSON + Markdown report, `main()` CLI (`incident-context-benchmark`). |
+| `src/incident_context/runtime_code/context.py` | `build_baseline_context` (arm A, correlation disabled, schema `runtime-code-context-baseline/v1`) plus `BASELINE_CONTEXT_VERSION`. |
+| `tests/fixtures/runtime_code/generate_benchmark_fixtures.py` | Deliberate generator for the 14 cases and the pinned output. |
+| `tests/fixtures/runtime_code/benchmark/cases/*.json` | 14 immutable cases covering every plan section 21 category. |
+| `tests/fixtures/runtime_code/benchmark/expected-output.json` | Pinned benchmark output (runtime fields removed), asserted byte-for-byte. |
+| `tests/test_gate6_benchmark.py` | 18 tests: fixture loading, baseline context, pinned full benchmark, determinism, metric calculations, regression thresholds, invariants, Markdown, CLI. |
+| `docs/runtime-code-correlation/gate6-ab-benchmark.md` | Metric definitions, honest scope, and the BugZero live-agent A/B procedure without customer data. |
+
+## Design decisions
+
+- **Honest arms.** Arm A is the same incident normalized the same way with
+  correlation disabled (`build_baseline_context`); arm B uses the existing
+  `build_compact_context`. The comparison isolates correlation.
+- **Proxy rules.** The proxy answers from hotspots when the primary evidence
+  matched; UNRESOLVED/UNAVAILABLE and AMBIGUOUS abstain. An answered
+  `mustAbstain` case is a false positive (never fabricate a winner).
+- **Dangerous-confidence accounting.** False HIGH/EXACT (wrong answer at
+  EXACT/HIGH band) is measured separately per plan section 22; wrong-revision
+  fixtures must never produce EXACT (invariant checked).
+- **Determinism.** Everything except wall-clock runtime is byte-for-byte
+  deterministic; runtime fields are omitted from the pinned payload, and
+  `casesDir` is cwd-relative so no machine-local absolute path can leak into
+  fixtures or output.
+- **Contradiction visibility.** `EvidenceStatusRecord.contradictions` counts
+  material contradictions across all candidates, so the contradictory-signals
+  case surfaces its LOGGER_CONFLICT in the report.
+
+## Fixture results (deterministic proxy, pinned)
+
+- 14 cases; arm A coverage 14.3% (only stack-carrying evidence resolves
+  without correlation), arm B coverage 71.4%.
+- Arm B location/symbol/top-3/status accuracy 100% over answered cases, zero
+  false positives, zero false HIGH/EXACT, abstention 28.6% (duplicate
+  template, unknown message, ambiguous candidate, contradictory signals).
+- Coverage gain 57.1%, 15 source searches avoided, 3 file reads avoided,
+  mean context token proxy reduced ~9.6%.
+- Invariants: tenant leakage 0, EXACT-without-exact-revision 0.
+
+## Validation
+
+- `python3 -m pytest -q`: full suite passes (245 tests: 227 prior + 18 Gate 6).
+- `python3 scripts/release_scan.py`: 0 failures including the new fixtures
+  and modules.
+- `python3 -m pip wheel . --no-deps -w dist`: wheel builds and
+  `incident-context-benchmark` imports/installs.
+- `graphify update .`: rebuilt `graphify-out/` (git-ignored).
+- Not pushed; commit body carries `AI-assisted: Jcode`.
+
+## Known limitations
+
+- This is a deterministic proxy evaluation, not live LLM quality. The live
+  agent A/B procedure is documented for BugZero private execution.
+- Wall-clock runtime is measured but intentionally excluded from the pinned
+  payload; it is reported in the live JSON/Markdown output.

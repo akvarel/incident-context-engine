@@ -1,0 +1,116 @@
+{
+  "anchors": [
+    {
+      "canonicalTemplate": "payment capture failed for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "6d02b5c46142e1b20aeeffbcb0286580932db79159f39591a236f8867ce256d8",
+      "id": "anchor:6d02b5c46142e1b20aeeffbcb0286580932db79159f39591a236f8867ce256d8",
+      "kind": "LOG_TEMPLATE",
+      "logger": "PaymentService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "6d02b5c46142e1b20aeeffbcb0286580932db79159f39591a236f8867ce256d8",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 12,
+        "framework": "typescript",
+        "graphNodeId": "fn_capture_payment",
+        "language": "typescript",
+        "logger": "PaymentService",
+        "ownerSymbol": "capturePayment()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/payments/capture.ts",
+        "startLine": 12
+      },
+      "static": true
+    },
+    {
+      "canonicalTemplate": "stock hold failed for <arg>",
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "fingerprint": "d7ce06da3c37cdd155c34f3aa651b92c9073a72a49afd35cdda54834d9f89858",
+      "id": "anchor:d7ce06da3c37cdd155c34f3aa651b92c9073a72a49afd35cdda54834d9f89858",
+      "kind": "LOG_TEMPLATE",
+      "logger": "InventoryService",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "d7ce06da3c37cdd155c34f3aa651b92c9073a72a49afd35cdda54834d9f89858",
+        "anchorKind": "LOG_TEMPLATE",
+        "endLine": 18,
+        "framework": "typescript",
+        "graphNodeId": "fn_hold_stock",
+        "language": "typescript",
+        "logger": "InventoryService",
+        "ownerSymbol": "holdStock()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/inventory/hold.ts",
+        "startLine": 18
+      },
+      "static": true
+    }
+  ],
+  "category": "multi-service",
+  "description": "One incident carries evidence from two services in the same repository; both must resolve to their own code sites and appear as separate hotspots.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-pay",
+      "kind": "LOG_PATTERN",
+      "logger": "PaymentService",
+      "normalizedTemplate": "payment capture failed for <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "6d02b5c46142e1b20aeeffbcb0286580932db79159f39591a236f8867ce256d8"
+    },
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-inventory:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-inv",
+      "kind": "LOG_PATTERN",
+      "logger": "InventoryService",
+      "normalizedTemplate": "stock hold failed for <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-inventory",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "d7ce06da3c37cdd155c34f3aa651b92c9073a72a49afd35cdda54834d9f89858"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 12,
+        "file": "src/payments/capture.ts",
+        "startLine": 12
+      }
+    ],
+    "primaryEvidenceId": "ev-pay",
+    "status": "MATCHED",
+    "symbols": [
+      "capturePayment()"
+    ]
+  },
+  "id": "multi-service",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

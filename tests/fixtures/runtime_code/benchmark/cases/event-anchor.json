@@ -1,0 +1,73 @@
+{
+  "anchors": [
+    {
+      "canonicalizationVersion": "runtime-code-canonicalization/v1",
+      "eventName": "payment.settlement_failed",
+      "fingerprint": "db4b3f7c4dc8992c32a2d041331d78d1f64cc2000de532decc41a9877de4a93e",
+      "id": "anchor:db4b3f7c4dc8992c32a2d041331d78d1f64cc2000de532decc41a9877de4a93e",
+      "kind": "EVENT",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "sourceCallsite": {
+        "anchorFingerprint": "db4b3f7c4dc8992c32a2d041331d78d1f64cc2000de532decc41a9877de4a93e",
+        "anchorKind": "EVENT",
+        "endLine": 21,
+        "framework": "typescript",
+        "graphNodeId": "fn_emit_settlement_failed",
+        "language": "typescript",
+        "logger": null,
+        "ownerSymbol": "emitSettlementFailed()",
+        "repository": "avion-payments",
+        "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFile": "src/events/settlement.ts",
+        "startLine": 21
+      },
+      "static": false
+    }
+  ],
+  "category": "event-anchor",
+  "description": "A structured event maps to the source event anchor and its owning symbol at HIGH confidence.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "eventName": "payment.settlement_failed",
+      "evidenceRef": "events:payment.settlement_failed:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-1",
+      "kind": "EVENT",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z"
+    }
+  ],
+  "expected": {
+    "locations": [
+      {
+        "endLine": 21,
+        "file": "src/events/settlement.ts",
+        "startLine": 21
+      }
+    ],
+    "primaryEvidenceId": "ev-1",
+    "status": "MATCHED",
+    "symbols": [
+      "emitSettlementFailed()"
+    ]
+  },
+  "id": "event-anchor",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

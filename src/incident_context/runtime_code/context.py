@@ -25,6 +25,7 @@ from typing import Any, Iterable
 from .lookup import ExpandedGraphRecord
 from .models import (
     CONTEXT_VERSION,
+    MAX_EVIDENCE_BATCH,
     MAX_GRAPH_EXPANSION,
     MAX_HOTSPOTS,
     CorrelationResult,
@@ -33,6 +34,8 @@ from .models import (
     RuntimeEvidence,
     RuntimeHotspot,
 )
+
+BASELINE_CONTEXT_VERSION = "runtime-code-context-baseline/v1"
 
 
 def _correlation_summary(results: Iterable[CorrelationResult]) -> dict[str, int]:
@@ -174,6 +177,95 @@ def build_compact_context(
     }
 
 
+def _evidence_summary_to_dict(record: RuntimeEvidence) -> dict[str, Any]:
+    """Canonical, bounded evidence summary for the correlation-disabled arm.
+
+    Contains only non-raw values: kind, canonical template, fingerprint,
+    logger, exception type, stack frames, and anchor names.  Raw messages,
+    runtime values, source bodies, credentials, and tenant identity are never
+    included.
+    """
+    return {
+        "id": record.id,
+        "kind": record.kind.value,
+        "service": record.service,
+        "environment": record.environment,
+        "severity": record.severity,
+        "logger": record.logger,
+        "normalizedTemplate": record.normalized_template,
+        "templateFingerprint": record.template_fingerprint,
+        "exceptionType": record.exception_type,
+        "stackFrames": [frame.to_dict() for frame in record.stack_frames],
+        "metricName": record.metric_name,
+        "eventName": record.event_name,
+        "spanName": record.span_name,
+        "evidenceRef": record.evidence_ref,
+    }
+
+
+def build_baseline_context(
+    *,
+    service: str,
+    environment: str,
+    start: str,
+    end: str,
+    scope: LookupScope,
+    evidence: Iterable[RuntimeEvidence],
+    max_evidence: int = MAX_EVIDENCE_BATCH,
+) -> dict[str, Any]:
+    """Build the correlation-disabled control-arm context (Gate 6 arm A).
+
+    This is the same incident, normalized the same way, but with no runtime
+    to code correlation: no hotspots, no graph neighborhood, and no code
+    symbols.  The proxy agent can only answer from runtime evidence that
+    already carries code metadata (exception stack frames).  The output is
+    deterministic, bounded, and contains no raw values or source bodies.
+    """
+    if not isinstance(service, str) or not service.strip():
+        raise ValueError("service is required")
+    if not isinstance(environment, str) or not environment.strip():
+        raise ValueError("environment is required")
+    for label, value in (("start", start), ("end", end)):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{label} is required")
+    scope.validate()
+    if not isinstance(max_evidence, int) or isinstance(max_evidence, bool):
+        raise ValueError("max_evidence must be an integer")
+    if max_evidence < 1 or max_evidence > MAX_EVIDENCE_BATCH:
+        raise ValueError(f"max_evidence must be between 1 and {MAX_EVIDENCE_BATCH}")
+
+    records = tuple(evidence)
+    for record in records:
+        record.validate()
+    if len(records) > MAX_EVIDENCE_BATCH:
+        raise ValueError(f"baseline context is limited to {MAX_EVIDENCE_BATCH} evidence items")
+    summaries = sorted(
+        (_evidence_summary_to_dict(record) for record in records),
+        key=lambda item: item["id"],
+    )[:max_evidence]
+
+    return {
+        "schemaVersion": BASELINE_CONTEXT_VERSION,
+        "correlationEnabled": False,
+        "incident": {
+            "service": service.strip(),
+            "environment": environment.strip(),
+            "start": start.strip(),
+            "end": end.strip(),
+        },
+        "scope": scope.to_dict(),
+        "evidenceSummaries": summaries,
+        "note": (
+            "baseline context: runtime-to-code correlation disabled; code "
+            "symbols, hotspots, and graph neighborhood are intentionally "
+            "absent; no raw log messages, metric values, source bodies, "
+            "credentials, or tenant identity"
+        ),
+    }
+
+
 __all__ = [
+    "BASELINE_CONTEXT_VERSION",
+    "build_baseline_context",
     "build_compact_context",
 ]

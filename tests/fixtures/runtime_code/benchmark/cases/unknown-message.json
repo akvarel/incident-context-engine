@@ -1,0 +1,44 @@
+{
+  "anchors": [],
+  "category": "unknown-message",
+  "description": "The message matches no anchor at all; the matcher must return UNRESOLVED and the proxy must abstain rather than fabricate a candidate.",
+  "end": "2026-08-11T12:01:00Z",
+  "environment": "prod",
+  "evidence": [
+    {
+      "deploymentRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "end": "2026-08-11T12:01:00Z",
+      "environment": "prod",
+      "evidenceRef": "loki:avion-payments:2026-08-11T12:00:00Z:2026-08-11T12:01:00Z",
+      "id": "ev-1",
+      "kind": "LOG_PATTERN",
+      "logger": null,
+      "normalizedTemplate": "mysterious noise <arg>",
+      "repository": "avion-payments",
+      "schemaVersion": "runtime-code-correlation/v1",
+      "service": "avion-payments",
+      "severity": "error",
+      "start": "2026-08-11T12:00:00Z",
+      "templateFingerprint": "a642357626681657879b4c92f83089291e5277f2730d5837dfa226fb14462188"
+    }
+  ],
+  "expected": {
+    "locations": [],
+    "mustAbstain": true,
+    "primaryEvidenceId": "ev-1",
+    "status": "UNRESOLVED",
+    "symbols": []
+  },
+  "id": "unknown-message",
+  "relations": [],
+  "repositories": {
+    "avion-payments": {
+      "requestedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "resolvedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revisionQuality": "EXACT"
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark-case/v1",
+  "service": "avion-payments",
+  "start": "2026-08-11T12:00:00Z"
+}

@@ -145,6 +145,28 @@ The engine stores no credentials. Adapters perform only explicitly requested bou
 access. Sensitive message values and sensitive structured fields are redacted before snapshot serialization. Raw evidence
 must remain in its original observability backend and is represented only by validated references.
 
+## Runtime-to-code correlation A/B benchmark (Gate 6)
+
+`incident-context-benchmark` compares incident context with runtime-to-code
+correlation disabled (arm A) against enabled (arm B) over 14 deterministic
+OSS-safe fixtures. It measures source-location accuracy, symbol accuracy,
+false-positive and abstention behavior, a context size/token proxy, and
+deterministic runtime, and emits machine-readable JSON plus concise Markdown:
+
+```bash
+incident-context-benchmark \
+  --cases-dir tests/fixtures/runtime_code/benchmark/cases \
+  --out-json benchmark-output.json \
+  --out-md benchmark-report.md
+```
+
+This is a deterministic proxy evaluation, not a live LLM experiment: it
+measures whether the correlated context resolves code symbols and locations
+and abstains honestly. The BugZero live-agent A/B procedure (correct root
+cause, fix, time-to-diagnosis, tool calls, real token billing) is documented
+in `docs/runtime-code-correlation/gate6-ab-benchmark.md` and runs on the same
+fixtures without customer data.
+
 ## License
 
 Dual-licensed under the MIT License or Apache License 2.0, at your option. See

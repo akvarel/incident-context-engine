@@ -1,0 +1,994 @@
+{
+  "caseCount": 14,
+  "caseSchemaVersion": "runtime-code-benchmark-case/v1",
+  "cases": [
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 289,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": true,
+          "candidates": [],
+          "reason": "ambiguous",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [
+          "reserveA()",
+          "reserveB()"
+        ],
+        "work": {
+          "contextTokens": 309,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "ambiguous-candidate",
+      "category": "ambiguous-candidate",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "AMBIGUOUS",
+          "topBand": "HIGH",
+          "topSymbol": "reserveA()"
+        }
+      ],
+      "expected": {
+        "locations": [],
+        "mustAbstain": true,
+        "primaryEvidenceId": "ev-1",
+        "status": "AMBIGUOUS",
+        "symbols": []
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 294,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": true,
+          "candidates": [],
+          "reason": "ambiguous",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [
+          "reserveInventory()",
+          "reservePayment()"
+        ],
+        "work": {
+          "contextTokens": 312,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "contradictory-signals",
+      "category": "contradictory-signals",
+      "evidenceStatuses": [
+        {
+          "contradictions": 1,
+          "evidenceId": "ev-1",
+          "status": "AMBIGUOUS",
+          "topBand": "MEDIUM",
+          "topSymbol": "reservePayment()"
+        }
+      ],
+      "expected": {
+        "locations": [],
+        "mustAbstain": true,
+        "primaryEvidenceId": "ev-1",
+        "status": "AMBIGUOUS",
+        "symbols": []
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 288,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": true,
+          "candidates": [],
+          "reason": "ambiguous",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [
+          "createOrder()",
+          "validateOrder()"
+        ],
+        "work": {
+          "contextTokens": 308,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "duplicate-template",
+      "category": "duplicate-template",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "AMBIGUOUS",
+          "topBand": "HIGH",
+          "topSymbol": "createOrder()"
+        }
+      ],
+      "expected": {
+        "locations": [],
+        "mustAbstain": true,
+        "primaryEvidenceId": "ev-1",
+        "status": "AMBIGUOUS",
+        "symbols": []
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 292,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "MEDIUM",
+              "endLine": 17,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/audit/recorder.ts",
+              "startLine": 17,
+              "symbol": "recordAudit()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "recordAudit()"
+        ],
+        "work": {
+          "contextTokens": 243,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "dynamic-message",
+      "category": "dynamic-message",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "MEDIUM",
+          "topSymbol": "recordAudit()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 17,
+            "file": "src/audit/recorder.ts",
+            "startLine": 17
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "recordAudit()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 274,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "HIGH",
+              "endLine": 21,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/events/settlement.ts",
+              "startLine": 21,
+              "symbol": "emitSettlementFailed()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "emitSettlementFailed()"
+        ],
+        "work": {
+          "contextTokens": 248,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "event-anchor",
+      "category": "event-anchor",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "emitSettlementFailed()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 21,
+            "file": "src/events/settlement.ts",
+            "startLine": 21
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "emitSettlementFailed()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": null,
+              "endLine": 42,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/paymentService.ts",
+              "startLine": 42,
+              "symbol": "charge"
+            }
+          ],
+          "reason": "stack_frame",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "charge"
+        ],
+        "work": {
+          "contextTokens": 302,
+          "fileReads": 2,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "EXACT",
+              "endLine": 42,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/paymentService.ts",
+              "startLine": 42,
+              "symbol": "charge()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "charge()"
+        ],
+        "work": {
+          "contextTokens": 287,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "exact-stack",
+      "category": "exact-stack",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "EXACT",
+          "topSymbol": "charge()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 42,
+            "file": "src/paymentService.ts",
+            "startLine": 42
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "charge",
+          "charge()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 272,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "MEDIUM",
+              "endLine": 33,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/gateway/client.ts",
+              "startLine": 33,
+              "symbol": "PaymentGatewayClient.send()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "PaymentGatewayClient.send()"
+        ],
+        "work": {
+          "contextTokens": 250,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "exception-only",
+      "category": "exception-only",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "MEDIUM",
+          "topSymbol": "PaymentGatewayClient.send()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 33,
+            "file": "src/gateway/client.ts",
+            "startLine": 33
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "PaymentGatewayClient.send()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 275,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "HIGH",
+              "endLine": 9,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/metrics/paymentMetrics.ts",
+              "startLine": 9,
+              "symbol": "observePaymentLatency()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "observePaymentLatency()"
+        ],
+        "work": {
+          "contextTokens": 251,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "metric-anchor",
+      "category": "metric-anchor",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "observePaymentLatency()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 9,
+            "file": "src/metrics/paymentMetrics.ts",
+            "startLine": 9
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "observePaymentLatency()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 401,
+          "fileReads": 0,
+          "sourceSearches": 2
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "HIGH",
+              "endLine": 8,
+              "evidenceIds": [
+                "ev-a"
+              ],
+              "sourceFile": "src/queue/publish.ts",
+              "startLine": 8,
+              "symbol": "publishToQueue()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "renderDocument()",
+          "publishToQueue()"
+        ],
+        "work": {
+          "contextTokens": 318,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "multi-repository",
+      "category": "multi-repository",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-a",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "publishToQueue()"
+        },
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-b",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "renderDocument()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 8,
+            "file": "src/queue/publish.ts",
+            "startLine": 8
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-a",
+        "status": "MATCHED",
+        "symbols": [
+          "publishToQueue()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 403,
+          "fileReads": 0,
+          "sourceSearches": 2
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "HIGH",
+              "endLine": 12,
+              "evidenceIds": [
+                "ev-pay"
+              ],
+              "sourceFile": "src/payments/capture.ts",
+              "startLine": 12,
+              "symbol": "capturePayment()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "capturePayment()",
+          "holdStock()"
+        ],
+        "work": {
+          "contextTokens": 317,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "multi-service",
+      "category": "multi-service",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-pay",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "capturePayment()"
+        },
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-inv",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "holdStock()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 12,
+            "file": "src/payments/capture.ts",
+            "startLine": 12
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-pay",
+        "status": "MATCHED",
+        "symbols": [
+          "capturePayment()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 290,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "HIGH",
+              "endLine": 10,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/orders/create.ts",
+              "startLine": 10,
+              "symbol": "createOrder()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "createOrder()",
+          "validateOrder()"
+        ],
+        "work": {
+          "contextTokens": 313,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "template-plus-logger",
+      "category": "template-plus-logger",
+      "evidenceStatuses": [
+        {
+          "contradictions": 1,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "createOrder()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 10,
+            "file": "src/orders/create.ts",
+            "startLine": 10
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "createOrder()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 290,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "HIGH",
+              "endLine": 42,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/paymentService.ts",
+              "startLine": 42,
+              "symbol": "charge()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "charge()"
+        ],
+        "work": {
+          "contextTokens": 246,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "unique-template",
+      "category": "unique-template",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "MATCHED",
+          "topBand": "HIGH",
+          "topSymbol": "charge()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 42,
+            "file": "src/paymentService.ts",
+            "startLine": 42
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "MATCHED",
+        "symbols": [
+          "charge()"
+        ]
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "no_stack",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 287,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [],
+          "reason": "unresolved",
+          "status": "ABSTAINED"
+        },
+        "contextTopSymbols": [],
+        "work": {
+          "contextTokens": 182,
+          "fileReads": 0,
+          "sourceSearches": 1
+        }
+      },
+      "caseId": "unknown-message",
+      "category": "unknown-message",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "UNRESOLVED",
+          "topBand": null,
+          "topSymbol": null
+        }
+      ],
+      "expected": {
+        "locations": [],
+        "mustAbstain": true,
+        "primaryEvidenceId": "ev-1",
+        "status": "UNRESOLVED",
+        "symbols": []
+      }
+    },
+    {
+      "armA": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": null,
+              "endLine": 55,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/inventory/sync.ts",
+              "startLine": 55,
+              "symbol": "syncInventory"
+            }
+          ],
+          "reason": "stack_frame",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "syncInventory"
+        ],
+        "work": {
+          "contextTokens": 289,
+          "fileReads": 1,
+          "sourceSearches": 1
+        }
+      },
+      "armB": {
+        "answer": {
+          "ambiguous": false,
+          "candidates": [
+            {
+              "confidenceBand": "MEDIUM",
+              "endLine": 55,
+              "evidenceIds": [
+                "ev-1"
+              ],
+              "sourceFile": "src/inventory/sync.ts",
+              "startLine": 55,
+              "symbol": "syncInventory()"
+            }
+          ],
+          "reason": "hotspot",
+          "status": "ANSWERED"
+        },
+        "contextTopSymbols": [
+          "syncInventory()"
+        ],
+        "work": {
+          "contextTokens": 253,
+          "fileReads": 0,
+          "sourceSearches": 0
+        }
+      },
+      "caseId": "wrong-revision",
+      "category": "wrong-revision",
+      "evidenceStatuses": [
+        {
+          "contradictions": 0,
+          "evidenceId": "ev-1",
+          "status": "DEGRADED_REVISION",
+          "topBand": "MEDIUM",
+          "topSymbol": "syncInventory()"
+        }
+      ],
+      "expected": {
+        "locations": [
+          {
+            "endLine": 55,
+            "file": "src/inventory/sync.ts",
+            "startLine": 55
+          }
+        ],
+        "mustAbstain": false,
+        "primaryEvidenceId": "ev-1",
+        "status": "DEGRADED_REVISION",
+        "symbols": [
+          "syncInventory",
+          "syncInventory()"
+        ]
+      }
+    }
+  ],
+  "casesDir": "tests/fixtures/runtime_code/benchmark/cases",
+  "evaluationMode": "deterministic_proxy",
+  "metrics": {
+    "armA": {
+      "abstentionRate": 0.8571,
+      "coverage": 0.1429,
+      "falseHighExactRate": 0.0,
+      "falsePositiveRate": 0.0,
+      "fileReads": 3,
+      "locationAccuracy": 1.0,
+      "meanContextTokens": 303.29,
+      "medianContextTokens": 289.5,
+      "sourceSearches": 16,
+      "statusAccuracy": null,
+      "symbolAccuracy": 1.0,
+      "top3SymbolRecall": 1.0
+    },
+    "armB": {
+      "abstentionRate": 0.2857,
+      "coverage": 0.7143,
+      "falseHighExactRate": 0.0,
+      "falsePositiveRate": 0.0,
+      "fileReads": 0,
+      "locationAccuracy": 1.0,
+      "meanContextTokens": 274.07,
+      "medianContextTokens": 270.0,
+      "sourceSearches": 1,
+      "statusAccuracy": 1.0,
+      "symbolAccuracy": 1.0,
+      "top3SymbolRecall": 1.0
+    },
+    "caseCount": 14,
+    "delta": {
+      "coverageGain": 0.5714,
+      "fileReadsAvoided": 3,
+      "locationAccuracyGain": 0.0,
+      "searchesAvoided": 15,
+      "symbolAccuracyGain": 0.0,
+      "tokenReductionPercent": 9.6326
+    },
+    "evaluationMode": "deterministic_proxy",
+    "invariants": {
+      "exactWithoutExactRevision": 0,
+      "tenantLeakage": 0
+    },
+    "schemaVersion": "runtime-code-benchmark/v1",
+    "thresholds": {
+      "passed": true,
+      "violations": []
+    }
+  },
+  "schemaVersion": "runtime-code-benchmark/v1"
+}
