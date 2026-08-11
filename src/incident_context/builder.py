@@ -50,10 +50,9 @@ class _Bucket:
 
 
 class IncidentContextBuilder:
-    def build(self, request: BuildRequest) -> IncidentContext:
-        request.validate()
+    def discover_patterns(self, events: list[LogEvent]) -> list[IncidentPattern]:
         buckets: dict[tuple[str, str], _Bucket] = {}
-        for event in request.events:
+        for event in events:
             evidence = EvidenceRef.from_mapping(event.evidence)
             severity = event.severity.upper().strip() or "INFO"
             template = event_template(event.message)
@@ -66,6 +65,11 @@ class IncidentContextBuilder:
 
         patterns = [self._pattern(bucket) for bucket in buckets.values()]
         patterns.sort(key=self._rank_key)
+        return patterns
+
+    def build(self, request: BuildRequest) -> IncidentContext:
+        request.validate()
+        patterns = self.discover_patterns(request.events)
         retained, omitted = self._apply_budget(patterns, request.token_budget)
         deltas = self._deltas(request, patterns)
         stack_fingerprints = self._stack_fingerprints(request.events)

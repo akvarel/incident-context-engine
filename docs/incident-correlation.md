@@ -1,5 +1,44 @@
 # Incident correlation
 
+## Context Compiler API
+
+The compiler layer introduced for milestone 4 provides progressive disclosure and bounded expansion over an
+already redacted and provenance-preserving `IncidentContext`.
+
+- `ExpansionDirective` lets clients request per-kind expansion limits.
+- `JcodeContextCompiler.compile` accepts one of `L0`, `L1`, or `L2`.
+- Every compile operation is deterministic and token-budget-aware.
+- Budgets are enforced before serialization, with transparent operation-level accounting.
+- Hypotheses are generated from retained patterns, stack fingerprints, and correlation groups and carry only
+  redacted evidence references.
+- When budget is insufficient, responses include `state.complete = false`, `state.next_level` for callers, and
+  operation metadata with requested versus applied counts.
+
+```python
+from incident_context import (
+    IncidentContextBuilder,
+    BuildRequest,
+    JcodeContextCompiler,
+    ExpansionDirective,
+)
+
+request = BuildRequest(
+    scope="payments",
+    token_budget=500,
+    events=events,
+)
+context = IncidentContextBuilder().build(request)
+compiler = JcodeContextCompiler()
+published = compiler.compile(
+    context,
+    level="L1",
+    token_budget=400,
+    directives=[
+        ExpansionDirective(kind="patterns", limit=4),
+    ],
+)
+```
+
 ## Timeline
 
 Every retained log pattern contributes one `log_pattern` timeline entry at its first occurrence.
@@ -48,9 +87,3 @@ Confidence is explicit rather than implied:
 Snapshot `correlationSummary` reports total events, events participating in real groups, coverage,
 weighted confidence, and `HIGH`, `MEDIUM`, `LOW`, or `NONE`. Missing IDs never become inferred
 causality.
-
-## Current boundary
-
-This milestone correlates explicit telemetry identifiers and chronology. It does not claim causal
-inference from timing alone. Trace adapters, Kubernetes marker collection, and code/deployment
-linkage can feed the same IR in later milestones without changing the correlation rules.
