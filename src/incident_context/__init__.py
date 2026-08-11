@@ -77,6 +77,16 @@ from .quality import (
     render_incident_report_markdown,
     representative_scenarios,
 )
+from .saas import (
+    ContextFirewall,
+    ContextKind,
+    FirewallResult,
+    InMemoryObservabilitySourceResolver,
+    ObservabilitySource,
+    ObservabilitySourceResolver,
+    SourcePipelineFactory,
+    build_source_incident,
+)
 from .service import (
     ApiPrincipal,
     InMemoryApiKeyBackend,
@@ -162,4 +172,12 @@ __all__ = [
     "record_performance",
     "render_incident_report_markdown",
     "representative_scenarios",
+    "ContextFirewall",
+    "ContextKind",
+    "FirewallResult",
+    "InMemoryObservabilitySourceResolver",
+    "ObservabilitySource",
+    "ObservabilitySourceResolver",
+    "SourcePipelineFactory",
+    "build_source_incident",
 ]
