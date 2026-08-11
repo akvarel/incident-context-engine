@@ -19,7 +19,7 @@ immutable, and honors the frozen v1 contract bounds.
 ## Schema contract
 
 The adapter reads the actual Graphify export field names (verified against
-`/sharedssd/git/graphify` at `b5cdebb`, see `graphify/extractors/observability.py`
+the local Graphify fork at commit `b5cdebb`, see `graphify/extractors/observability.py`
 and `graphify/export.py`):
 
 - top level: `nodes`, `links` (the export spelling; `edges` is also accepted

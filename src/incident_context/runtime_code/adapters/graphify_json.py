@@ -7,7 +7,7 @@ indexes.  It performs no network calls, executes no graph query language, and
 accepts no query strings from callers.
 
 Schema (actual Graphify field names, see
-``/sharedssd/git/graphify`` after ``b5cdebb``):
+the local Graphify fork after commit ``b5cdebb``):
 
 - top level: ``nodes``, ``links`` (the export spelling; ``edges`` is accepted
   for build-path compatibility), ``hyperedges``, ``built_at_commit``;

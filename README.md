@@ -201,3 +201,110 @@ For metric-first investigation use `"mode": "metric-first"` plus a bounded
 
 The intended failure policy is fail-closed: if source resolution or incident processing is
 unavailable, raw production logs must not be forwarded automatically to an external LLM.
+
+## Runtime-to-code correlation (Gate 1 + Gate 3 + Gate 5)
+
+The `incident_context.runtime_code` package is the OSS core of runtime-to-code
+correlation, implemented against the frozen v1 contracts in
+[`docs/runtime-code-correlation/contracts-v1.md`](docs/runtime-code-correlation/contracts-v1.md).
+It maps selected runtime evidence (log patterns, exceptions, metrics, events,
+trace spans) to source callsites and symbols deterministically: exact stack
+metadata, exact template fingerprint, logger, exception, metric/event/span
+anchors, then lexical fallback. It never guesses dynamic messages, never
+forces a winner when candidates remain ambiguous, and applies contradictions
+as a downgrade.
+
+```python
+from incident_context.runtime_code import (
+    RuntimeEvidence,
+    RuntimeEvidenceKind,
+    LookupScope,
+    correlate_evidence,
+    build_compact_context,
+    aggregate_hotspots,
+    GraphifyJsonLookup,
+)
+```
+
+The correlation result carries a status (`MATCHED`, `AMBIGUOUS`, `UNRESOLVED`,
+`UNAVAILABLE`, `DEGRADED_REVISION`), a confidence band (`EXACT`, `HIGH`,
+`MEDIUM`, `LOW`, `UNRESOLVED`), candidates, signals, contradictions, and
+provenance. Semantic-only evidence can never produce an `EXACT` band, and an
+unknown revision is never reported as exact line-level evidence. Repeated
+copies of one log pattern are one evidence type: hotspots rank by independent
+signal diversity, not raw repetition.
+
+### GraphifyJsonLookup
+
+`GraphifyJsonLookup` implements the bounded, read-only `SourceGraphLookup`
+protocol over a Graphify `graph.json` export (see
+[`docs/runtime-code-correlation/graphify-json-adapter.md`](docs/runtime-code-correlation/graphify-json-adapter.md)).
+It reuses Graphify's own code graph and validates anchor kind, canonicalization
+version, and template `sha256` at construction:
+
+```python
+lookup = GraphifyJsonLookup(
+    "graphify-out/graph.json",
+    repository="avion-payments",
+    revision="9f86d081…a08",          # optional; defaults to built_at_commit
+)
+scope = LookupScope(repository="avion-payments", revision="9f86d081…a08")
+batch = lookup.find_callsites_by_fingerprint(scope, ["d99ebd90…e89c3"])
+```
+
+### Compact context
+
+`build_compact_context()` emits a single deterministic `runtime-code-context/v1`
+JSON document for the LLM agent: incident identity and evidence counts, the
+repository/revision scope used, a correlation summary, top hotspots with
+confidence/score/signal families/evidence references, and the bounded sorted
+graph neighborhood. It rejects fabricated evidence ids and never contains raw
+log messages, metric values, source bodies, credentials, or tenant identity.
+
+### Safety, bounds, and failure behavior
+
+- The core accepts no credentials and performs no unrestricted network calls;
+  repository and revision are explicit lookup scope, and tenant authorization
+  is owned by the BugZero wrapper.
+- Bounds are enforced everywhere: at most 50 lookup keys, 20 candidates per
+  key, 50 graph expansions, and bounded hotspots/evidence batches.
+- A wrong-repository or wrong-revision scope returns an empty `AVAILABLE`
+  batch, never fabricated candidates; unavailable lookups return
+  `UNAVAILABLE` as data; an explicit mismatched revision fails construction.
+- Incident compression itself continues when correlation is unavailable.
+- Correlation roles are `EMISSION_SITE`, `EXCEPTION_SITE`, `METRIC_SITE`,
+  `RELATED_SYMBOL`, or `HOTSPOT`. The core never emits `ROOT_CAUSE_CANDIDATE`;
+  root-cause inference is a later, separate stage.
+
+### Benchmark usage
+
+The deterministic evaluation fixtures under `tests/fixtures/evaluation/` and
+the golden incident scenario under
+`tests/fixtures/runtime_code/golden/payment-timeout/` are the OSS benchmark
+harness: no network, byte-for-byte stable output, enforced by
+`tests/test_gate5_golden_incident.py`. Regenerate the golden files deliberately
+and review the diff before committing:
+
+```bash
+python3 tests/fixtures/runtime_code/generate_fixtures.py
+```
+
+Run the benchmark smoke (deterministic correlation over the golden incident):
+
+```bash
+python3 -m pytest tests/test_gate3_graphify_integration_trace.py \
+  tests/test_gate5_golden_incident.py -q
+```
+
+The incident evaluation command measures raw-to-compact compression and
+protected-evidence retention without claiming diagnosis quality:
+
+```bash
+incident-context evaluate --input tests/fixtures/evaluation/raw.jsonl \
+  --baseline-input tests/fixtures/evaluation/baseline.jsonl \
+  --scope payments --budget 900 --label acceptance --json-only
+```
+
+Release-readiness scans (license, dependencies, secrets, customer data,
+proprietary imports, packaging, public API) run without network via
+`scripts/release_scan.py` and are enforced by `tests/test_release_readiness.py`.

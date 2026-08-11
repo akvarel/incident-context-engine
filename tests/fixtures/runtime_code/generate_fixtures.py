@@ -7,7 +7,7 @@ serialization.  Run from the repository root:
     python3 tests/fixtures/runtime_code/generate_fixtures.py
 
 The Graphify ``graph-fixture/graph.json`` uses the actual Graphify export
-schema (field names from /sharedssd/git/graphify after commit b5cdebb):
+schema (field names from the local Graphify fork after commit b5cdebb):
 
 - nodes carry ``id``, ``label``, ``file_type``, ``source_file``,
   ``source_location`` (``L<line>``), optional ``type``; observability anchors

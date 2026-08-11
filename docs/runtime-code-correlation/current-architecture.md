@@ -300,6 +300,6 @@ These decisions must be accepted before parallel implementation.
 - [x] Proposed module boundaries are explicit.
 - [x] Proposed v1 contract decisions are explicit.
 - [x] Owner delegates research and Gate control to the lead agent; Gate 0 architecture and boundary review is accepted.
-- [x] Use the registered `/sharedssd/git/graphify` fork checkout for Graphify implementation and upstream-compatible review.
+- [x] Use the registered local Graphify fork checkout for Graphify implementation and upstream-compatible review.
 
 No implementation branch may invent incompatible schemas before the v1 contracts are frozen at Gate 1.
