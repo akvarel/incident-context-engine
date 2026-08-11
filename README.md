@@ -6,7 +6,8 @@ evidence references.
 
 ## Current vertical slice
 
-The first usable slice accepts JSON Lines log events and produces `incident-context/v1` JSON:
+The engine accepts JSON Lines log events and typed metric, infrastructure, deployment, and Grafana
+references and produces `incident-context/v1` JSON:
 
 - deterministic normalization and stable fingerprints;
 - aggregation of repeated events;
@@ -24,8 +25,10 @@ read-only queries. Progressive disclosure, durable Graphify code references, MCP
 and the reference self-hosted service are implemented without changing the raw evidence stores.
 
 The library now also provides bounded read-only `LokiAdapter` and `PrometheusAdapter` clients,
-plus `IncidentContextPipeline.build_from_loki()` for carrying source completeness and query
-accounting into the snapshot. See `docs/observability-adapters.md`.
+plus `IncidentContextPipeline.build_from_loki()` and `build_metric_first()` for carrying source
+completeness and query accounting into the snapshot. Metric-first mode reduces Prometheus series to
+bounded anomalies and uses their service labels to narrow the Loki query. See
+`docs/observability-adapters.md`.
 
 Incident snapshots additionally include chronological timelines, normalized exception-stack
 fingerprints, pseudonymous cross-service correlation groups with confidence and coverage, and
@@ -83,9 +86,28 @@ The project also provides a small local HTTP service and an MCP-compatible tool 
 - `GET /v1/admin/audit` — tenant-scoped audit trail (`incident_context:audit` role)
 - `POST /mcp` — `initialize`, `tools/list`, `tools/call` methods
 
-The MCP surface exposes `build_incident_context`, `get_incident_context`, and
-`expand_incident_context`. Jcode can consume these through its existing MCP client while its
-existing Graphify Context Compiler remains the source of code topology.
+The MCP surface exposes context build/get/expand plus bounded timeline, pattern, exception,
+correlation, metric, infrastructure, deployment, and Grafana read tools. Read tools require the
+reader role and cap results at 50 items. Context creation separately requires the writer role.
+Jcode can consume these through its existing MCP client while its existing Graphify Context
+Compiler remains the source of code topology.
+
+## Advanced observability and quality
+
+The public package also includes:
+
+- alert-seeded and directionally bounded incident windows;
+- deterministic Prometheus anomaly reduction and metric-first Loki narrowing;
+- grouped Kubernetes event normalization with evidence references;
+- credential-safe Grafana references;
+- cardinality findings and a redacting, telemetry-producing TTL query cache;
+- eight representative incident-quality scenarios, protected-evidence recall, CPU/wall/memory and
+  query/cache telemetry;
+- a structured incident report and evidence-reference-only Markdown renderer.
+
+The evidence-backed status of every requirement is recorded in
+[`docs/phase-completion-matrix.md`](docs/phase-completion-matrix.md). Optional semantic clustering is
+intentionally not activated because current deterministic evaluation fixtures remain bounded.
 
 Tenant isolation is enforced from the API key principal on every stateful path.
 Rate limits, role checks, audit recording, and bounded payload checks are implemented
@@ -119,8 +141,8 @@ payload = snapshot.to_dict()
 
 ## Security boundary
 
-The engine stores no credentials and performs no remote access in this slice. Sensitive message
-values and sensitive structured fields are redacted before snapshot serialization. Raw evidence
+The engine stores no credentials. Adapters perform only explicitly requested bounded, read-only
+access. Sensitive message values and sensitive structured fields are redacted before snapshot serialization. Raw evidence
 must remain in its original observability backend and is represented only by validated references.
 
 ## License
