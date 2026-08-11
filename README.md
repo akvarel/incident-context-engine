@@ -24,11 +24,13 @@ The deterministic core does not mutate Loki or Prometheus. Optional adapters per
 read-only queries. Progressive disclosure, durable Graphify code references, MCP tools, evaluation,
 and the reference self-hosted service are implemented without changing the raw evidence stores.
 
-The library now also provides bounded read-only `LokiAdapter` and `PrometheusAdapter` clients,
-plus `IncidentContextPipeline.build_from_loki()` and `build_metric_first()` for carrying source
-completeness and query accounting into the snapshot. Metric-first mode reduces Prometheus series to
-bounded anomalies and uses their service labels to narrow the Loki query. See
-`docs/observability-adapters.md`.
+The library now also provides bounded read-only `LokiAdapter`, `PrometheusAdapter`, and
+`JenkinsAdapter` clients, plus `IncidentContextPipeline.build_from_loki()`,
+`build_from_jenkins()`, and `build_metric_first()` for carrying source completeness and query
+accounting into the snapshot. The Jenkins adapter reads a single build's console through Jenkins
+progressive text endpoints with deterministic build metadata, bounded chunk retrieval, and explicit
+incomplete reasons. Metric-first mode reduces Prometheus series to bounded anomalies and uses their
+service labels to narrow the Loki query. See `docs/observability-adapters.md`.
 
 Incident snapshots additionally include chronological timelines, normalized exception-stack
 fingerprints, pseudonymous cross-service correlation groups with confidence and coverage, and
