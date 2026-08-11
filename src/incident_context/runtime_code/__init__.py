@@ -38,15 +38,6 @@ from .adapters import (
     ObservabilitySourceIndexer,
     TypeScriptJavaScriptIndexer,
 )
-from .benchmark import (
-    CASE_SCHEMA_VERSION,
-    BenchmarkCase,
-    BenchmarkCaseError,
-    BenchmarkReport,
-    RepositoryScope,
-    load_benchmark_cases,
-    run_benchmark,
-)
 from .benchmark_metrics import (
     ABSTAINED,
     ANSWERED,
@@ -265,3 +256,34 @@ __all__ = [
     "CONTRADICTION_PENALTY",
     "SIGNAL_WEIGHTS",
 ]
+
+# ``benchmark`` is an executable module (it carries the ``python -m`` CLI
+# entrypoint).  Importing it eagerly from this package would register it in
+# ``sys.modules`` before ``runpy`` executes it, which triggers a RuntimeWarning
+# for ``python -m incident_context.runtime_code.benchmark``.  Keep the public
+# API ergonomics (``from incident_context.runtime_code import run_benchmark``)
+# but defer the import until the symbol is actually requested (PEP 562).
+_LAZY_BENCHMARK_EXPORTS = frozenset(
+    {
+        "CASE_SCHEMA_VERSION",
+        "BenchmarkCase",
+        "BenchmarkCaseError",
+        "BenchmarkReport",
+        "RepositoryScope",
+        "load_benchmark_cases",
+        "run_benchmark",
+    }
+)
+
+
+def __getattr__(name: str) -> object:
+    if name in _LAZY_BENCHMARK_EXPORTS:
+        from . import benchmark as _benchmark
+
+        return getattr(_benchmark, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))
+

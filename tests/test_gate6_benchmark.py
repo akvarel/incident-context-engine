@@ -9,6 +9,9 @@ correlation-disabled baseline context builder, and the Markdown renderer.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -454,3 +457,35 @@ def test_cli_writes_json_and_markdown(tmp_path):
     assert "runtimeMs" not in json.dumps(payload)
     report_md = out_md.read_text(encoding="utf-8")
     assert "Gate 6 A/B benchmark" in report_md
+
+
+def test_module_invocation_emits_no_runtime_warning():
+    """Running the executable module must not warn about pre-registered import.
+
+    ``incident_context.runtime_code`` used to eagerly import ``.benchmark``
+    from its package ``__init__``, so ``python -m`` found the module already in
+    ``sys.modules`` and emitted a RuntimeWarning from runpy.  The public API now
+    lazy-exports the benchmark symbols, and invoking the module in a fresh
+    interpreter must complete cleanly.
+    """
+    src = Path(__file__).parent.parent / "src"
+    env = dict(
+        os.environ,
+        PYTHONPATH=str(src),
+        # Turn the warning into an error so any regression fails the subprocess.
+        PYTHONWARNINGS="error::RuntimeWarning",
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "incident_context.runtime_code.benchmark",
+            "--help",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "RuntimeWarning" not in result.stderr
+    assert "usage: incident-context-benchmark" in result.stdout
