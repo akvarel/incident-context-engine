@@ -287,7 +287,7 @@ These decisions must be accepted before parallel implementation.
 3. Decide whether Graphify exposes a typed batch API/MCP tool, a versioned export file, or both for `SourceGraphLookup`.
 4. Select the production persistence boundary for contexts, correlations, deployment mappings, audit, and immutable caches.
 5. Select the authoritative artifact source for image digest/build-to-Git-SHA mapping.
-6. Confirm the first language/framework from actual BugZero customer repositories. Java/SLF4J is the plan default, but repository evidence must win.
+6. The first language/framework is TypeScript/JavaScript. The BugZero engine is a TypeScript ESM package and its runtime telemetry is emitted through `LokiClient` with structured message/fields, while the codebase also contains extensive `console.*` callsites. Java/SLF4J remains the next enterprise adapter, not the first adapter.
 7. Decide whether the OSS runtime-code package remains inside this repository or is later extracted as a standalone package.
 
 ## 8. Gate 0 acceptance checklist
@@ -299,7 +299,7 @@ These decisions must be accepted before parallel implementation.
 - [x] OSS/private/infrastructure ownership is explicit.
 - [x] Proposed module boundaries are explicit.
 - [x] Proposed v1 contract decisions are explicit.
-- [ ] Owner accepts the Graphify contribution/fork workflow.
-- [ ] Gate 0 architecture and boundary review is accepted.
+- [x] Owner delegates research and Gate control to the lead agent; Gate 0 architecture and boundary review is accepted.
+- [ ] Establish a local Graphify contribution checkout/fork before Graphify implementation.
 
-No implementation branch may invent incompatible schemas before the final two items are resolved.
+No implementation branch may invent incompatible schemas before the v1 contracts are frozen at Gate 1.
