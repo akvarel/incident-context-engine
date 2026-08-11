@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, urlparse
 
 from .builder import IncidentContextBuilder
 from .context_compiler import ExpansionDirective, JcodeContextCompiler
+from .saas import SourcePipelineFactory, build_source_incident
 from .models import (
     BuildRequest,
     EvidenceRef,
@@ -280,6 +281,7 @@ class IncidentContextService:
         rate_limiter: InMemoryRateLimiter | None = None,
         audit_log: InMemoryAuditLog | None = None,
         context_store: InMemoryContextStore | None = None,
+        source_pipeline_factory: SourcePipelineFactory | None = None,
         max_payload_bytes: int = 1_048_576,
         max_events_per_request: int = 2_000,
     ) -> None:
@@ -294,6 +296,7 @@ class IncidentContextService:
         self._rate_limiter = rate_limiter or InMemoryRateLimiter()
         self._audit_log = audit_log or InMemoryAuditLog()
         self._context_store = context_store or InMemoryContextStore()
+        self._source_pipeline_factory = source_pipeline_factory
         self._max_payload_bytes = max_payload_bytes
         self._max_events_per_request = max_events_per_request
 
@@ -548,6 +551,84 @@ class IncidentContextService:
         return {
             "contextId": context_id,
             "tenantId": principal.tenant_id,
+            "context": context.to_dict(),
+        }
+
+    def build_context_from_sources(self, payload: Mapping[str, Any], principal: ApiPrincipal) -> dict[str, Any]:
+        """Build a context by resolving a tenant-scoped observability source.
+
+        Public callers provide only ``source_id`` and query parameters. Datasource
+        endpoints and credentials are resolved inside the trusted service boundary.
+        """
+        if self._source_pipeline_factory is None:
+            raise ServiceError(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "source_build_unavailable",
+                "tenant observability source builds are not configured",
+                outcome="dependency_unavailable",
+            )
+        source_id = str(payload.get("source_id", "")).strip()
+        if not source_id:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "source_id_required", "source_id is required")
+        scope = str(payload.get("scope", "")).strip()
+        if not scope:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "scope_required", "scope is required")
+        try:
+            start = _parse_iso_timestamp(str(payload["start"]))
+            end = _parse_iso_timestamp(str(payload["end"]))
+        except KeyError as error:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "time_window_required", "start and end are required") from error
+        except ValueError as error:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_time_window", str(error)) from error
+        if end <= start:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_time_window", "end must be after start")
+        raw_apps = payload.get("apps", [])
+        if not isinstance(raw_apps, list) or any(not isinstance(item, str) for item in raw_apps):
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_apps", "apps must be an array of strings")
+        try:
+            token_budget = int(payload.get("token_budget", 2_000))
+            loki_limit = int(payload.get("loki_limit", 500))
+            max_anomalies = int(payload.get("max_anomalies", 10))
+            metric_step_seconds = int(payload.get("metric_step_seconds", 15))
+            baseline_minutes = payload.get("baseline_minutes")
+            if baseline_minutes is not None:
+                baseline_minutes = int(baseline_minutes)
+            pipeline, source = self._source_pipeline_factory.pipeline(
+                tenant_id=principal.tenant_id,
+                source_id=source_id,
+            )
+            context = build_source_incident(
+                pipeline,
+                source,
+                scope=scope,
+                namespace=str(payload.get("namespace", "")).strip() or None,
+                start=start,
+                end=end,
+                token_budget=token_budget,
+                apps=tuple(raw_apps),
+                baseline_minutes=baseline_minutes,
+                mode=str(payload.get("mode", "loki")),
+                metric_expression=(
+                    str(payload.get("metric_expression", "")).strip() or None
+                ),
+                metric_step_seconds=metric_step_seconds,
+                max_anomalies=max_anomalies,
+                loki_limit=loki_limit,
+            )
+        except LookupError as error:
+            raise ServiceError(HTTPStatus.NOT_FOUND, "source_not_found", str(error), outcome="not_found") from error
+        except (TypeError, ValueError, RuntimeError) as error:
+            raise ServiceError(HTTPStatus.BAD_REQUEST, "bad_source_build_request", str(error)) from error
+
+        context_id = str(uuid.uuid4())
+        created_at = _to_iso_utc(datetime.now(timezone.utc))
+        self._context_store.save(
+            principal.tenant_id, context_id, context.to_dict(), context, created_at
+        )
+        return {
+            "contextId": context_id,
+            "tenantId": principal.tenant_id,
+            "sourceId": source_id,
             "context": context.to_dict(),
         }
 
@@ -906,7 +987,13 @@ class IncidentContextRequestHandler(BaseHTTPRequestHandler):
 
             service.check_rate_limit(principal.tenant_id, now=time.time())
 
-            if self.command == "POST" and path == "/v1/contexts":
+            if self.command == "POST" and path == "/v1/incidents/build-from-sources":
+                action = "incident_context.create_from_sources"
+                service.require_roles(principal, required=[_WRITE_ROLE])
+                body = self._read_json_body(service._max_payload_bytes)
+                payload = service.build_context_from_sources(body, principal)
+
+            elif self.command == "POST" and path == "/v1/contexts":
                 action = "incident_context.create"
                 service.require_roles(principal, required=[_WRITE_ROLE])
                 body = self._read_json_body(service._max_payload_bytes)

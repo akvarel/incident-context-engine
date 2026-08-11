@@ -149,3 +149,55 @@ must remain in its original observability backend and is represented only by val
 
 Dual-licensed under the MIT License or Apache License 2.0, at your option. See
 `LICENSE-MIT`, `LICENSE-APACHE`, and `NOTICE`. The root `LICENSE` retains the original MIT grant.
+
+## SaaS pre-LLM integration
+
+For multi-tenant SaaS deployments, observability data should enter the LLM path through the
+incident engine rather than being copied directly into prompts. The service now supports a
+trusted tenant/source boundary:
+
+- `POST /v1/incidents/build-from-sources` accepts a tenant-scoped `source_id`, time window,
+  namespace/app scope and build mode. It never accepts Loki/Prometheus credentials or arbitrary
+  datasource URLs from the public request.
+- `ObservabilitySourceResolver` resolves `tenant_id + source_id` inside the trusted SaaS boundary.
+  A production implementation can back this with the SaaS credential broker or secret manager.
+- `SourcePipelineFactory` creates bounded Loki/Prometheus adapters from that trusted runtime
+  configuration and feeds the existing `IncidentContextPipeline`.
+- `ContextFirewall` is a fail-closed pre-LLM guard. `raw_logs` can be deterministically reduced to
+  an `IncidentContext`; raw Loki/Prometheus/stacktrace payloads are rejected instead of silently
+  passing through to the model.
+
+Recommended SaaS flow:
+
+```text
+Agent tool result
+      |
+      v
+Context Firewall
+      |
+      +-- raw observability --> Incident Context Engine --> compact L0/L1/L2 context
+      |
+      +-- already-safe context ---------------------------> LLM prompt builder
+```
+
+A source-based request looks like:
+
+```json
+{
+  "source_id": "prod-observability",
+  "scope": "payments",
+  "namespace": "prod",
+  "apps": ["payment-service"],
+  "start": "2026-08-11T14:20:00Z",
+  "end": "2026-08-11T14:35:00Z",
+  "mode": "loki",
+  "token_budget": 3000,
+  "loki_limit": 500
+}
+```
+
+For metric-first investigation use `"mode": "metric-first"` plus a bounded
+`metric_expression`; Prometheus narrows the incident before Loki is queried.
+
+The intended failure policy is fail-closed: if source resolution or incident processing is
+unavailable, raw production logs must not be forwarded automatically to an external LLM.

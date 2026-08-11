@@ -19,5 +19,6 @@ incident-context = "incident_context.cli:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 addopts = "-q"
 testpaths = ["tests"]
