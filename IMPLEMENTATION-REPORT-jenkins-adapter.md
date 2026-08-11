@@ -33,8 +33,7 @@ Every commit body carries the `AI-assisted: Jcode` marker. Nothing was pushed.
   - `AdapterLimits`: added `max_log_bytes` (5 MB), `max_requests` (100), `max_chunks` (100),
     validated as positive integers in `__post_init__`.
   - `JenkinsQuery(job, build, service=None, limit=500)`.
-  - `JenkinsAdapter`: metadata via `/job/<encoded>/.../<build>/api/json` (reusing `JsonTransport`),
-    console via `/job/<encoded>/.../<build>/logText/progressiveText?start=<offset>`. Nested folder
+  - `JenkinsAdapter`: metadata via `/job/<encoded>/.../<build>/api/json` with Jenkins' `tree=number,timestamp,result,building` selector so the response is bounded to required fields only; console via `/job/<encoded>/.../<build>/logText/progressiveText?start=<offset>`. Nested folder
     segments are individually URL-encoded (`quote(segment, safe="")`); dot/dotdot, control
     characters, empty segments, `?`/`#`, invalid build numbers, URL credentials, and naive
     datetimes are rejected. Retrieval advances only via numeric `X-Text-Size`, honors
@@ -57,7 +56,7 @@ Every commit body carries the `AI-assisted: Jcode` marker. Nothing was pushed.
 
 ## Tests
 
-`tests/test_jenkins_adapter.py` — 60 test cases covering: nested job URL encoding; metadata +
+`tests/test_jenkins_adapter.py` — 62 collected test cases covering: nested job URL encoding; metadata +
 multi-chunk progressive retrieval; advancement via numeric `X-Text-Size` only (multibyte body);
 case-insensitive `X-More-Data`/`X-Text-Size`; CRLF and chunk-boundary line joining; Timestamper,
 deterministic fallback, and naive-prefix timestamps; severity; line/byte/chunk/request/response
@@ -71,7 +70,8 @@ server end-to-end and oversized-response paths.
 ## Validation actually executed
 
 - RED: `pytest tests/test_jenkins_adapter.py` — collection error (expected).
-- GREEN: focused run — 60/60 pass; full suite — **316 passed** (baseline 256 + 60 new).
+- GREEN: delegated focused run — 60/60 pass; delegated full suite — **316 passed** (baseline 256 + 60 new).
+- Independent review: added strict retained-byte enforcement, bounded metadata field selection, service-override validation, out-of-range timestamp handling, and five additional acceptance cases. Final focused suite — **62 passed**; final full suite — **321 passed**.
 - `python -m compileall -q src/incident_context tests/test_jenkins_adapter.py` — OK.
 - Wheel: `python -m pip wheel . --no-deps -w dist` (isolated build) →
   `dist/incident_context_engine-0.7.0-py3-none-any.whl` (129,881 bytes). Contents inspected with
@@ -86,8 +86,7 @@ server end-to-end and oversized-response paths.
 
 - No live Jenkins instance was available. The real `urllib` transports were exercised against a
   local `ThreadingHTTPServer` (success path, oversized-response rejection, and HTTP-500 redaction).
-- The total byte budget is enforced per chunk after processing, so it can overshoot by up to one
-  chunk; the result is marked `byte_limit_reached` and retains the already received data.
+- The total retained console byte budget is enforced strictly. If a Jenkins chunk exceeds the remaining budget, only the valid UTF-8 prefix within the budget is retained and the result is marked `byte_limit_reached`.
 - `query_count` counts every HTTP request, including the metadata call.
 - Byte accounting re-encodes the replacement-decoded body, so it is an exact approximation of raw
   bytes for valid UTF-8 and bounded/deterministic otherwise.

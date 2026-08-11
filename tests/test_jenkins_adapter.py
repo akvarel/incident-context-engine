@@ -130,6 +130,9 @@ def test_jenkins_metadata_and_progressive_chunks_with_nested_job_url_encoding():
     assert metadata_url.startswith(
         "http://jenkins.example.com/job/Folder/job/Job%20Name/42/api/json"
     )
+    assert parse_qs(urlparse(metadata_url).query)["tree"] == [
+        "number,timestamp,result,building"
+    ]
     first_url = fake.text_calls[0][0]
     assert first_url.startswith(
         "http://jenkins.example.com/job/Folder/job/Job%20Name/42/logText/progressiveText"
@@ -284,6 +287,18 @@ def test_jenkins_byte_limit_marks_incomplete():
     assert result.complete is False
     assert result.incomplete_reason == "byte_limit_reached"
     assert len(result.events) == 1
+    assert sum(len(event.message.encode("utf-8")) for event in result.events) <= 10
+
+
+@pytest.mark.parametrize("service", ["", "bad\nservice", "bad\x7fservice", 123])
+def test_jenkins_rejects_invalid_service_override_before_transport(service):
+    fake = FakeJenkins(_metadata(), [])
+
+    with pytest.raises(ValueError, match="service"):
+        _adapter(fake).query(JenkinsQuery(job="app", build=1, service=service))
+
+    assert fake.metadata_calls == []
+    assert fake.text_calls == []
 
 
 def test_jenkins_chunk_limit_marks_incomplete():
@@ -386,6 +401,7 @@ def test_jenkins_invalid_missing_and_non_advancing_offsets():
         {"timestamp": BUILD_START_MS, "number": 42, "result": 5, "building": False},
         {"timestamp": BUILD_START_MS, "number": 42, "result": "SUCCESS", "building": "yes"},
         {"timestamp": -5, "number": 42, "result": "SUCCESS", "building": False},
+        {"timestamp": 10**30, "number": 42, "result": "SUCCESS", "building": False},
     ],
 )
 def test_jenkins_rejects_malformed_metadata(bad):
@@ -605,7 +621,7 @@ class _JenkinsHandler(BaseHTTPRequestHandler):
     metadata = _metadata()
 
     def do_GET(self):
-        if self.path.endswith("/api/json"):
+        if urlparse(self.path).path.endswith("/api/json"):
             body = json.dumps(self.metadata).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

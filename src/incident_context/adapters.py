@@ -427,6 +427,11 @@ class JenkinsAdapter(_BaseAdapter):
     def query(self, query: JenkinsQuery) -> LogQueryResult:
         segments = self._validate_job(query.job)
         self._validate_build(query.build)
+        if query.service is not None:
+            if not isinstance(query.service, str) or not query.service or any(
+                ord(character) < 32 or ord(character) == 127 for character in query.service
+            ):
+                raise ValueError("Jenkins service override contains unsupported characters")
         if query.limit < 1 or query.limit > self._limits.max_log_lines:
             raise ValueError("Jenkins line limit exceeds configured maximum")
         encoded = "/job/" + "/job/".join(quote(segment, safe="") for segment in segments)
@@ -439,7 +444,8 @@ class JenkinsAdapter(_BaseAdapter):
         requests = 1
         try:
             metadata = self._transport.get_json(
-                f"{self._base_url}{encoded}/{query.build}/api/json",
+                f"{self._base_url}{encoded}/{query.build}/api/json"
+                "?tree=number,timestamp,result,building",
                 headers=self._headers,
                 timeout_seconds=self._limits.request_timeout_seconds,
                 max_response_bytes=self._limits.max_response_bytes,
@@ -522,8 +528,15 @@ class JenkinsAdapter(_BaseAdapter):
                 raise JenkinsTransportError("Jenkins console retrieval failed") from None
             requests += 1
             chunks += 1
-            total_bytes += len(response.body.encode("utf-8", errors="replace"))
-            buffer += response.body
+            remaining_bytes = self._limits.max_log_bytes - total_bytes
+            response_bytes = response.body.encode("utf-8", errors="replace")
+            byte_limit_reached = len(response_bytes) > remaining_bytes
+            if byte_limit_reached:
+                retained_body = response_bytes[:remaining_bytes].decode("utf-8", errors="ignore")
+            else:
+                retained_body = response.body
+            total_bytes += len(retained_body.encode("utf-8"))
+            buffer += retained_body
             while "\n" in buffer:
                 line, buffer = buffer.split("\n", 1)
                 emit(line.rstrip("\r"))
@@ -532,7 +545,7 @@ class JenkinsAdapter(_BaseAdapter):
             if len(events) >= query.limit:
                 incomplete_reason = "limit_reached"
                 break
-            if total_bytes > self._limits.max_log_bytes:
+            if byte_limit_reached:
                 incomplete_reason = "byte_limit_reached"
                 break
             more = self._header_value(response.headers, "X-More-Data")
@@ -592,7 +605,10 @@ class JenkinsAdapter(_BaseAdapter):
         number = metadata.get("number")
         if number is not None and (isinstance(number, bool) or number != build):
             raise RuntimeError("Jenkins build metadata is malformed")
-        return datetime.fromtimestamp(raw / 1000, tz=timezone.utc)
+        try:
+            return datetime.fromtimestamp(raw / 1000, tz=timezone.utc)
+        except (OverflowError, OSError, ValueError):
+            raise RuntimeError("Jenkins build metadata is malformed") from None
 
     @classmethod
     def _parse_timestamper(cls, line: str) -> tuple[datetime, str] | None:
