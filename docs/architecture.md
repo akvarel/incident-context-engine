@@ -1,5 +1,7 @@
 # Architecture
 
+For the current OSS runtime-to-code architecture, Graphify compatibility baseline, public workflow, failure model, and acceptance criteria, see [`runtime-code-correlation/oss-architecture-and-workflow.md`](runtime-code-correlation/oss-architecture-and-workflow.md).
+
 ```mermaid
 flowchart LR
     A[Alert seed] --> W[Bounded incident window]

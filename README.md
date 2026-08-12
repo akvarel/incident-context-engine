@@ -154,6 +154,8 @@ The engine stores no credentials. Adapters perform only explicitly requested bou
 access. Sensitive message values and sensitive structured fields are redacted before snapshot serialization. Raw evidence
 must remain in its original observability backend and is represented only by validated references.
 
+The canonical public ICE and Graphify architecture, compatibility baseline, end-to-end workflow, degradation semantics, and acceptance checklist are in [`docs/runtime-code-correlation/oss-architecture-and-workflow.md`](docs/runtime-code-correlation/oss-architecture-and-workflow.md).
+
 ## Runtime-to-code correlation A/B benchmark (Gate 6)
 
 `incident-context-benchmark` compares incident context with runtime-to-code

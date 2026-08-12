@@ -1,5 +1,7 @@
 # Runtime-to-code correlation: current architecture
 
+> Historical Phase 0 discovery snapshot for the pre-implementation Graphify 0.9.37 baseline. For the current OSS architecture and Graphify 0.9.40 compatibility workflow, use [`oss-architecture-and-workflow.md`](oss-architecture-and-workflow.md).
+
 Status: Phase 0 discovery and Gate 0 proposal  
 Evidence date: 2026-08-11
 
