@@ -3,6 +3,10 @@ from __future__ import annotations
 import hashlib
 
 from .adapters import (
+    BitbucketAdapter,
+    BitbucketPipelineQuery,
+    GitHubActionsQuery,
+    GitHubAdapter,
     JenkinsAdapter,
     JenkinsQuery,
     LogQueryResult,
@@ -29,11 +33,15 @@ class IncidentContextPipeline:
         loki: LokiAdapter,
         prometheus: PrometheusAdapter | None = None,
         jenkins: JenkinsAdapter | None = None,
+        github: GitHubAdapter | None = None,
+        bitbucket: BitbucketAdapter | None = None,
         builder: IncidentContextBuilder | None = None,
     ) -> None:
         self._loki = loki
         self._prometheus = prometheus
         self._jenkins = jenkins
+        self._github = github
+        self._bitbucket = bitbucket
         self._builder = builder or IncidentContextBuilder()
 
     def build_from_loki(
@@ -87,15 +95,49 @@ class IncidentContextPipeline:
                 token_budget=token_budget,
                 events=list(result.events),
                 source_observations=(
-                    SourceObservation(
-                        source="jenkins",
-                        query_ref=result.query_ref,
-                        complete=result.complete,
-                        incomplete_reason=result.incomplete_reason,
-                        query_count=result.query_count,
-                        scanned_items=result.scanned_items,
-                        retained_items=len(result.events),
-                    ),
+                    self._source_observation_for("jenkins", result),
+                ),
+            )
+        )
+
+    def build_from_github(
+        self,
+        *,
+        scope: str,
+        token_budget: int,
+        github_query: GitHubActionsQuery,
+    ) -> IncidentContext:
+        if self._github is None:
+            raise ValueError("GitHub adapter is required for GitHub builds")
+        result = self._github.query(github_query)
+        return self._builder.build(
+            BuildRequest(
+                scope=scope,
+                token_budget=token_budget,
+                events=list(result.events),
+                source_observations=(
+                    self._source_observation_for("github", result),
+                ),
+            )
+        )
+
+    def build_from_bitbucket(
+        self,
+        *,
+        scope: str,
+        token_budget: int,
+        bitbucket_query: BitbucketPipelineQuery,
+    ) -> IncidentContext:
+        if self._bitbucket is None:
+            raise ValueError("Bitbucket adapter is required for Bitbucket builds")
+        result = self._bitbucket.query(bitbucket_query)
+        return self._builder.build(
+            BuildRequest(
+                scope=scope,
+                token_budget=token_budget,
+                events=list(result.events),
+                source_observations=(
+                    self._source_observation_for("bitbucket", result),
                 ),
             )
         )
@@ -145,6 +187,18 @@ class IncidentContextPipeline:
     def _source_observation(result: LogQueryResult) -> SourceObservation:
         return SourceObservation(
             source="loki",
+            query_ref=result.query_ref,
+            complete=result.complete,
+            incomplete_reason=result.incomplete_reason,
+            query_count=result.query_count,
+            scanned_items=result.scanned_items,
+            retained_items=len(result.events),
+        )
+
+    @staticmethod
+    def _source_observation_for(source: str, result: LogQueryResult) -> SourceObservation:
+        return SourceObservation(
+            source=source,
             query_ref=result.query_ref,
             complete=result.complete,
             incomplete_reason=result.incomplete_reason,

@@ -150,11 +150,12 @@ class FakeGithub:
         self.single_job = single_job
         self.run_calls = []
         self.jobs_calls = []
+        self.single_job_calls = []
         self.archive_calls = []
 
     def get_json(self, url, *, headers, timeout_seconds, max_response_bytes):
         if "/actions/jobs/" in url:
-            self.jobs_calls.append((url, dict(headers), timeout_seconds, max_response_bytes))
+            self.single_job_calls.append((url, dict(headers), timeout_seconds, max_response_bytes))
             if self.jobs_exception is not None:
                 raise self.jobs_exception
             return self.single_job
@@ -224,7 +225,8 @@ class FakeBitbucket:
 
     def get_log(self, url, *, headers, timeout_seconds, max_response_bytes):
         self.log_calls.append((url, dict(headers), timeout_seconds, max_response_bytes))
-        step_uuid = urlparse(url).path.rstrip("/").split("/")[-1]
+        path_parts = urlparse(url).path.rstrip("/").split("/")
+        step_uuid = path_parts[-2]
         if step_uuid in self.log_exceptions:
             raise self.log_exceptions[step_uuid]
         return self.logs[step_uuid]
@@ -341,7 +343,7 @@ def test_github_whole_job_fallback_when_no_step_files():
         [_jobs_payload([_job(11, "build")])],
         archive,
     )
-    result = _github_adapter(fake).query(GitHubActionsQuery(owner="o", repo="r", run_id=1))
+    result = _github_adapter(fake).query(GitHubActionsQuery(owner="o", repo="r", run_id=12345))
 
     assert result.complete is True
     assert [event.message for event in result.events] == ["ERROR whole job line", "INFO more"]
@@ -593,7 +595,7 @@ def test_github_archive_entry_limit_marks_incomplete():
         "../evil.txt",
         "/absolute.txt",
         "a/../../evil.txt",
-        "C:/drive.txt",
+        "x:dir/evil.txt",
         "a\\..\\evil.txt",
     ],
 )
@@ -681,8 +683,9 @@ def test_github_step_logs_missing_marks_incomplete():
     archive = _zip_bytes({"build/1_Run tests.txt": b"ERROR one\n"})
     fake = FakeGithub(
         _run_metadata(),
-        [_jobs_payload([_job(11, "build")])],
+        [],
         archive,
+        single_job=_job(11, "build"),
     )
     result = _github_adapter(fake).query(
         GitHubActionsQuery(owner="o", repo="r", run_id=12345, job_id=11, step_number=5)
@@ -804,7 +807,7 @@ def test_github_transport_failure_redacts_bodies_credentials_and_headers():
     fake = FakeGithub(
         _run_metadata(),
         [],
-        archive,
+        b"",
         archive_exception=RuntimeError("archive body with super-secret-token"),
         single_job=_job(11, "build"),
     )
@@ -895,7 +898,9 @@ def test_github_query_ref_is_deterministic_and_opaque():
     assert "widget" not in first.query_ref
     assert "github" not in first.query_ref
 
-    different = adapter.query(GitHubActionsQuery(owner="acme", repo="widget", run_id=12346, limit=50))
+    different = adapter.query(
+        GitHubActionsQuery(owner="acme", repo="widget", run_id=12345, limit=51)
+    )
     assert different.query_ref != first.query_ref
 
 
@@ -1040,7 +1045,9 @@ def test_bitbucket_pipeline_steps_and_logs_full_flow():
         "{11111111-2222-3333-4444-555555555555}"
     )
     steps_url = fake.steps_calls[0][0]
-    assert steps_url.endswith("/pipelines/{11111111-2222-3333-4444-555555555555}/steps")
+    assert urlparse(steps_url).path.endswith(
+        "/pipelines/{11111111-2222-3333-4444-555555555555}/steps"
+    )
     assert parse_qs(urlparse(steps_url).query)["pagelen"] == ["100"]
     assert parse_qs(urlparse(steps_url).query)["page"] == ["1"]
 
@@ -1223,12 +1230,13 @@ def test_bitbucket_line_limit_marks_incomplete():
     )
     result = _bitbucket_adapter(fake).query(
         BitbucketPipelineQuery(
+
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
             limit=1,
-        )
-    )
+                    step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
+        )    )
 
     assert result.complete is False
     assert result.incomplete_reason == "limit_reached"
@@ -1251,11 +1259,12 @@ def test_bitbucket_byte_limit_marks_incomplete():
         fake, limits=AdapterLimits(max_log_bytes=10)
     ).query(
         BitbucketPipelineQuery(
+
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
-        )
-    )
+                    step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
+        )    )
 
     assert result.complete is False
     assert result.incomplete_reason == "byte_limit_reached"
@@ -1277,11 +1286,12 @@ def test_bitbucket_request_limit_marks_incomplete():
         fake, limits=AdapterLimits(max_requests=2)
     ).query(
         BitbucketPipelineQuery(
+
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
-        )
-    )
+                    step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
+        )    )
 
     assert result.complete is False
     assert result.incomplete_reason == "request_limit_reached"
@@ -1329,11 +1339,12 @@ def test_bitbucket_deterministic_timestamp_fallback():
     )
     result = _bitbucket_adapter(fake).query(
         BitbucketPipelineQuery(
+
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
-        )
-    )
+                    step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
+        )    )
 
     base = RUN_START + timedelta(microseconds=1)
     assert result.events[0].timestamp == base
@@ -1355,11 +1366,12 @@ def test_bitbucket_severity_uses_existing_detection():
     )
     result = _bitbucket_adapter(fake).query(
         BitbucketPipelineQuery(
+
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
-        )
-    )
+                    step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
+        )    )
 
     assert [event.severity for event in result.events] == ["WARN", "FATAL", "INFO"]
 
@@ -1550,11 +1562,12 @@ def test_bitbucket_forwards_headers_without_leaking_them():
     )
     result = adapter.query(
         BitbucketPipelineQuery(
+
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
-        )
-    )
+                    step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
+        )    )
 
     assert fake.pipeline_calls[0][1]["Authorization"] == "Bearer hunter2"
     assert fake.log_calls[0][1]["X-Custom"] == "value"
@@ -1620,9 +1633,9 @@ def test_bitbucket_pipeline_propagates_source_completeness_and_accounting():
             workspace="acme",
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
+            step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
         ),
     )
-
     source = snapshot.sources[0]
     assert source.source == "bitbucket"
     assert source.complete is True
@@ -1656,9 +1669,9 @@ def test_bitbucket_pipeline_marks_incomplete_when_budget_hit():
             repo_slug="widget",
             pipeline_uuid="{11111111-2222-3333-4444-555555555555}",
             limit=2,
+            step_uuid="{aaaaaaaa-1111-2222-3333-444444444444}",
         ),
     )
-
     assert snapshot.incomplete is True
     assert snapshot.sources[0].incomplete_reason == "limit_reached"
 
@@ -1717,7 +1730,9 @@ class _GitHubHandler(BaseHTTPRequestHandler):
         {
             "build/1_Run tests.txt": b"2026-08-11T09:30:01Z ERROR live github\n",
             "build/2_Deploy.txt": b"2026-08-11T09:30:02Z INFO deploy\n",
-            "lint/1_Big file.txt": b"x" * 5000,
+            "lint/1_Big file.txt": b"".join(
+                __import__("hashlib").sha256(f"padding-{i}".encode()).digest() for i in range(300)
+            ),
         }
     )
     job_txt = b"2026-08-11T09:30:01Z ERROR live job text\nINFO done\n"
@@ -1799,7 +1814,7 @@ class _RedirectLoopHandler(BaseHTTPRequestHandler):
             _http_redirect(self, "/r1")
             return
         if path.startswith("/r") and path != "/r6":
-            number = int(path[1:]) + 1
+            number = int(path[2:]) + 1
             _http_redirect(self, f"/r{number}")
             return
         body = b"ok"
@@ -1964,6 +1979,16 @@ class _RangeLogHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if path.endswith("/pipelines/{11111111-2222-3333-4444-555555555555}/steps"):
+            body = json.dumps(
+                {"page": 1, "pagelen": 100, "size": 1, "values": [self.step_a]}
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if path.endswith("/steps/{aaaaaaaa-1111-2222-3333-444444444444}/log"):
             body = b"ERROR partial range content\n"
             self.send_response(206)
@@ -2109,7 +2134,7 @@ def test_github_default_transport_job_plain_text_via_redirect(github_server):
 def test_github_default_transport_rejects_oversized_archive(github_server):
     result = GitHubAdapter(
         github_server, limits=AdapterLimits(max_response_bytes=1500)
-    ).query(GitHubActionsQuery(owner="o", repo="r", run_id=12345, job_id=11))
+    ).query(GitHubActionsQuery(owner="o", repo="r", run_id=12345))
 
     assert result.complete is False
     assert result.incomplete_reason == "byte_limit_reached"
