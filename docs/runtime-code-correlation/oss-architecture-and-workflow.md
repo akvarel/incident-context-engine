@@ -1,7 +1,7 @@
 # Incident Context Engine and Graphify OSS architecture
 
-Status: canonical OSS architecture  
-Last verified: 2026-08-12  
+Status: canonical OSS architecture
+Last verified: 2026-08-12
 Audience: library users, source-index maintainers, observability platform engineers, and agent-tool authors
 
 ## 1. Purpose
