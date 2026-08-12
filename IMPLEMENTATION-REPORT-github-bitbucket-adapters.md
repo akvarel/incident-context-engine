@@ -12,9 +12,10 @@ top of the existing Jenkins console adapter patterns.
 |---|---|---|
 | `b2a13af` | RED | `tests/test_github_bitbucket_adapters.py` — fails during collection (`ImportError`) because the adapters are not implemented |
 | `99fd4ef` | GREEN | `GitHubAdapter`, `GitHubActionsQuery`, `BitbucketAdapter`, `BitbucketPipelineQuery`, `GitHubTransportError`, `BitbucketTransportError`, `BinaryResponse`, `UrllibGithubTransport`, `UrllibBitbucketTransport`, extended `AdapterLimits`, pipeline `build_from_github`/`build_from_bitbucket`, public exports |
-| (next) | docs | `docs/observability-adapters.md`, `README.md`, and this report |
+| `f0ec565` | docs | `docs/observability-adapters.md`, `README.md`, and this report |
 
-Every commit body carries the `AI-assisted: Jcode` marker. Nothing was pushed.
+Every commit body carries the `AI-assisted: Jcode` marker. Delegated implementation did not push;
+final branch delivery is handled separately after independent review.
 
 ## API research performed
 
@@ -124,11 +125,26 @@ rejection, log redirects, `206` partial content, and HTTP-500 redaction.
 - `graphify update .` — output refreshed in `graphify-out/` (globally gitignored, not tracked).
 - Docs: `docs/observability-adapters.md` and `README.md` updated.
 
+- Independent review re-ran the focused suite: **137 passed in 7.69s**.
+- Independent review re-ran the full suite: **458 passed in 19.60s**.
+- Independent public-interface acceptance: **10 mapped checks passed in 3.43s**, covering public
+  exports, pipeline accounting, GitHub redirect+ZIP retrieval, cross-origin authorization stripping,
+  oversized archives, Bitbucket end-to-end retrieval, log redirects, and Range byte limits.
+- Independent clean-wheel installation imported `GitHubAdapter`, `BitbucketAdapter`, and
+  `IncidentContextPipeline` successfully.
+- Independent compile, diff, and credential-pattern scan passed with zero candidate secrets.
+- `graphify update .` completed successfully; no topology changes remained after the implementation
+  rebuild.
+
 ## Limitations / notes
 
-- No live GitHub or Bitbucket tenant was available; both default `urllib` transports were exercised
-  against local `ThreadingHTTPServer` backends (success, redirect, oversized, and HTTP-error paths).
-  API shapes were taken from the current official docs and the published Bitbucket OpenAPI spec.
+- No authenticated live GitHub or Bitbucket tenant was available. A real public GitHub Actions run
+  (`actions/checkout`, run `31443765423`) was queried successfully for metadata and jobs, but the
+  provider returned HTTP 403 at the log-download boundary without credentials. No GitHub or
+  Bitbucket credential variables are configured in this environment. Both default `urllib`
+  transports were therefore exercised against local `ThreadingHTTPServer` backends for complete
+  success, redirect, oversized, and HTTP-error paths. API shapes were taken from the current
+  official docs and the published Bitbucket OpenAPI spec.
 - GitHub job-folder matching replicates the server-side sanitization documented by the official CLI
   (strip `/` and `:`, truncate to 90 UTF-16 code units). If GitHub changes the archive layout, the
   deterministic selection rules are isolated in `_select_entries` for review.
